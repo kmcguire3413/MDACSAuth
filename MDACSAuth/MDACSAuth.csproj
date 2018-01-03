@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyVersion>0.0.0.1</AssemblyVersion>
-    <FileVersion>0.0.201.2002</FileVersion>
+    <FileVersion>0.0.201.2003</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

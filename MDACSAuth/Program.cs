@@ -6,7 +6,7 @@ namespace MDACSAuth
     {
         static void Main(string[] args)
         {
-            // test
+            
         }
     }
 }
