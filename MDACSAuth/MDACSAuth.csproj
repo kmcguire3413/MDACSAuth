@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <None Remove="webres\angular.min.js" />
+    <None Remove="webres\app.js" />
     <None Remove="webres\app.jsx" />
     <None Remove="webres\index.html" />
     <None Remove="webres\react-dom.development.js" />
@@ -17,6 +18,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="webres\angular.min.js" />
+    <EmbeddedResource Include="webres\app.js" />
     <EmbeddedResource Include="webres\app.jsx" />
     <EmbeddedResource Include="webres\index.html" />
     <EmbeddedResource Include="webres\react-dom.development.js" />
@@ -25,7 +27,6 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="React.MSBuild" Version="3.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,7 +39,7 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="c:\users\kmcgu\appdata\local\Programs\Python\Python36\python.exe pre-build.py" />
+    <Exec Command="pre-build.bat" />
   </Target>
 
 </Project>

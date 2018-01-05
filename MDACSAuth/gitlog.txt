@@ -1,3 +1,9 @@
+* commit 600bb7f78f53b9923cbd121d427180f2d25a9e5b
+| Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
+| Date:   Thu Jan 4 19:40:05 2018 -0600
+| 
+|     Attemping to create build environment using JSX for React to demo using the software technology to build the webpage UI.
+| 
 * commit ce2c83bb9bfa05e49f4e8874a8017c388212ae67
 | Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
 | Date:   Tue Jan 2 23:37:47 2018 -0600

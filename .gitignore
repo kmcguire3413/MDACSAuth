@@ -6,3 +6,5 @@
 /MDACSAuth/obj
 /.vs/config
 /MDACSAuth/bin/Debug/netcoreapp2.0
+/MDACSAuth/node_modules
+/MDACSAuth/package-lock.json
