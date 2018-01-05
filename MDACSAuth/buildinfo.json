@@ -1,1 +1,1 @@
-{"git_branch": "nightly", "git_commit": "3d99843", "git_message_line": "test"}
+{"git_branch": "nightly", "version": "0.0.201.4021", "git_commit": "ce2c83b", "git_message_line": "A commit to test the pre-commit GIT hook."}

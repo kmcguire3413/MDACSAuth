@@ -28,6 +28,7 @@ import subprocess
 import xml.etree.ElementTree as et
 import datetime
 import json
+import os.path
 
 def IncrementVersionString(verstr):
 	verstr = verstr.split('.')
@@ -47,22 +48,17 @@ def IncrementVersionString(verstr):
 	return '%s.%s.%s.%s' % (major, minor, build, rev)
 
 def IncrementVersionOnProject(project, breaking_changes=False):
-	path = './%s/%s.csproj' % (project, project)
+	buildinfo_path = 'buildinfo.json'
+	if os.path.exists(buildinfo_path):
+		fd = open(buildinfo_path, 'r')
+		buildinfo = json.loads(fd.read())
+		fd.close()
+	else:
+		buildinfo = {
+			'version': '0.0.0.0',
+		}
 
-	projxml = et.parse(path)
-
-	root = projxml.getroot()
-
-	filever = root.findall('./PropertyGroup/FileVersion')[0]
-	filever.text = IncrementVersionString(filever.text)
-
-	print(filever.text)
-
-	if breaking_changes:
-		asmver = root.findall('./PropertyGroup/AssemblyVersion')[0]
-		asmver.text = IncrementVersionString(asmver.text)
-
-	projxml.write(path)
+	buildinfo['version'] = IncrementVersionString(buildinfo['version'])
 
 	gitb = subprocess.Popen('git branch -vv', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	gitb = gitb.stdout.read().decode('utf8')
@@ -83,16 +79,16 @@ def IncrementVersionOnProject(project, breaking_changes=False):
 	if cur_branch is None:
 		raise Exception('Unable to get the current GIT branch information using the command `git branch`.')
 
-	fd = open('./%s/buildinfo.json' % project, 'w')
-	fd.write(json.dumps({
-		'git_branch': cur_branch,
-		'git_commit': cur_commit,
-		'git_message_line': cur_message_line,
-	}))
+	buildinfo['git_branch'] = cur_branch
+	buildinfo['git_commit'] = cur_commit
+	buildinfo['git_message_line'] = cur_message_line
+
+	fd = open(buildinfo_path, 'w')
+	fd.write(json.dumps(buildinfo))
 	fd.close()
 
-	fd = open('./%s/gitlog.txt' % project, 'w')
+	fd = open('gitlog.txt', 'w')
 	gitlog = subprocess.Popen('git log --graph', stdout=fd.fileno(), stderr=subprocess.PIPE)
 	fd.close()
 
-IncrementVersionOnProject('MDACSAuth')
+IncrementVersionOnProject('MDACSDatabase')

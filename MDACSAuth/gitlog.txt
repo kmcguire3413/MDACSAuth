@@ -1,3 +1,9 @@
+* commit ce2c83bb9bfa05e49f4e8874a8017c388212ae67
+| Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
+| Date:   Tue Jan 2 23:37:47 2018 -0600
+| 
+|     A commit to test the pre-commit GIT hook.
+| 
 * commit 3d99843770efa6121dea74c90296843c18780965
 | Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
 | Date:   Tue Jan 2 22:30:15 2018 -0600

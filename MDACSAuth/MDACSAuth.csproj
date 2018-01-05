@@ -4,13 +4,41 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyVersion>0.0.0.1</AssemblyVersion>
-    <FileVersion>0.0.201.2003</FileVersion>
+    <FileVersion>0.0.201.2004</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="webres\angular.min.js" />
+    <None Remove="webres\app.jsx" />
+    <None Remove="webres\index.html" />
+    <None Remove="webres\react-dom.development.js" />
+    <None Remove="webres\react.development.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="webres\angular.min.js" />
+    <EmbeddedResource Include="webres\app.jsx" />
+    <EmbeddedResource Include="webres\index.html" />
+    <EmbeddedResource Include="webres\react-dom.development.js" />
+    <EmbeddedResource Include="webres\react.development.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="React.MSBuild" Version="3.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MDACSAPI">
+      <HintPath>..\..\MDACSDatabase\MDACSAPI\bin\Debug\netstandard2.0\MDACSAPI.dll</HintPath>
+    </Reference>
     <Reference Include="MDACSHTTPServer">
       <HintPath>..\..\MDACSHTTPServer\bin\Debug\netstandard2.0\MDACSHTTPServer.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="c:\users\kmcgu\appdata\local\Programs\Python\Python36\python.exe pre-build.py" />
+  </Target>
 
 </Project>

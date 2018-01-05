@@ -4,3 +4,5 @@
 
 /.vs/MDACSAuth/v15
 /MDACSAuth/obj
+/.vs/config
+/MDACSAuth/bin/Debug/netcoreapp2.0
