@@ -14,6 +14,8 @@
     <None Remove="webres\index.html" />
     <None Remove="webres\react-dom.development.js" />
     <None Remove="webres\react.development.js" />
+    <None Remove="webres\sha512.js" />
+    <None Remove="webres\superagent.js" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +25,8 @@
     <EmbeddedResource Include="webres\index.html" />
     <EmbeddedResource Include="webres\react-dom.development.js" />
     <EmbeddedResource Include="webres\react.development.js" />
+    <EmbeddedResource Include="webres\sha512.js" />
+    <EmbeddedResource Include="webres\superagent.js" />
   </ItemGroup>
 
   <ItemGroup>

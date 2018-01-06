@@ -74,6 +74,7 @@ namespace MDACSAuth
             Stream body,
             IProxyHTTPEncoder encoder)
         {
+
             return Task.CompletedTask;
         }
 
@@ -133,6 +134,14 @@ namespace MDACSAuth
         {
             await Util.ReadStreamUntilEndAndDiscardDataAsync(body);
 
+#if DEBUG
+            var strm = File.OpenRead(
+                Path.Combine(
+                    @"C:\Users\kmcgu\source\repos\MDACSAuth\MDACSAuth\webres\",
+                    target
+                )
+            );
+#else
             var strm = Assembly.GetExecutingAssembly().GetManifestResourceStream($"MDACSAuth.webres.{target}");
 
             if (strm == null)
@@ -141,7 +150,7 @@ namespace MDACSAuth
                     .CacheControl("no-cache, no-store, must-revalidate")
                     .SendNothing();
             }
-
+#endif
             return await encoder.Response(200, "OK")
                 .ContentType_GuessFromFileName(target)
                 .CacheControl("public, max-age=0")
@@ -180,6 +189,55 @@ namespace MDACSAuth
             return await encoder.Response(200, "OK")
                 .ContentType("application/json")
                 .SendJsonFromObject(state.GetUserList());
+        }
+
+        public static async Task<Task> IsLoginValid(
+            ServerState state,
+            HTTPRequest request,
+            Stream body,
+            IProxyHTTPEncoder encoder)
+        {
+            var msg = await Util.ReadJsonObjectFromStreamAsync<Msg>(body, 1024);
+
+            bool valid = false;
+
+            if (msg.payload == null)
+            {
+                if (state.Verify(msg.auth.challenge, msg.auth.hash) != null)
+                {
+                    valid = true;
+                }
+            } else
+            {
+                if (state.VerifyPayload(
+                    msg.auth.challenge,
+                    msg.auth.chash,
+                    msg.auth.hash
+                ) != null)
+                {
+                    valid = true;
+                }
+            }
+
+            if (valid)
+            {
+                await encoder.Response(200, "OK")
+                    .CacheControlDoNotCache()
+                    .ContentType_JSON()
+                    .SendJsonFromObject(new AuthLoginValidResponse()
+                    {
+                        success = true,
+                    });
+            } else
+            {
+                await encoder.Response(403, "No")
+                    .CacheControlDoNotCache()
+                    .ContentType_JSON()
+                    .SendJsonFromObject(new AuthLoginValidResponse()
+                    {
+                        success = false,
+                    });
+            }
         }
 
         public static async Task<Task> Version(
@@ -241,6 +299,29 @@ namespace MDACSAuth
             Stream body,
             IProxyHTTPEncoder encoder)
         {
+            /*
+                The token signed with the authentication service's
+                private key. Verifiable by other services using the
+                public key they hold for the authentication service.
+
+                {
+                    data: 'base64',
+                    signature: 'base64',
+                }
+
+
+                Data could be:
+
+                {
+                    username: '',
+                    realname: '',
+                    email: '',
+                    phone: '',
+                    validuntil: '', // very important part of token (lifetime)
+                }
+            */
+
+
             return Task.CompletedTask;
         }
     }
@@ -444,6 +525,7 @@ namespace MDACSAuth
 
             handlers.Add("/utility", Handlers.Utility);
             handlers.Add("/", Handlers.Index);
+            handlers.Add("/is-login-valid", Handlers.IsLoginValid);
             handlers.Add("/verify", Handlers.Verify);
             handlers.Add("/verify-payload", Handlers.VerifyPayload);
             handlers.Add("/user-set", Handlers.UserSet);
