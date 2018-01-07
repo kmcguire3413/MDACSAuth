@@ -1,3 +1,11 @@
+* commit c18d52eb8fb52ad30d444b8b3b308ac898df37d2
+| Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
+| Date:   Sun Jan 7 00:09:10 2018 -0600
+| 
+|     Interface is almost completed. The functionality to add users, delete users, and push changes is still awaiting implementation.
+|     
+|     Also, hopefully, everything should compartmentalize so that the application can be served to another site (such as App service) which can then integrate this application into itself using its own login form.
+| 
 * commit e3dbb46efd9718d411411aa170846139a600dd9b
 | Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
 | Date:   Sat Jan 6 22:07:53 2018 -0600

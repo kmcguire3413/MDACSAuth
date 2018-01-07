@@ -10,6 +10,7 @@ const Label = ReactBootstrap.Label;
 const ListGroup = ReactBootstrap.ListGroup;
 const ListGroupItem = ReactBootstrap.ListGroupItem;
 const Checkbox = ReactBootstrap.Checkbox;
+const Alert = ReactBootstrap.Alert;
 
 class AuthNetworkDAO {
     constructor(
@@ -21,10 +22,34 @@ class AuthNetworkDAO {
         );
     }
 
-    userSet() {
+    userSet(user, success, failure) {
+        this.dao.authenticatedTransaction(
+            '/user-set',
+            {
+                user: user,
+            },
+            (resp) => {
+                success();
+            },
+            (res) => {
+                failure(res);
+            }
+        );        
     }
 
-    userDelete() {
+    userDelete(username) {
+        this.dao.authenticatedTransaction(
+            '/user-delete',
+            {
+                username: username,
+            },
+            (resp) => {
+                success();
+            },
+            (res) => {
+                failure(res);
+            }
+        );
     }
 
     userList(success, failure) {
@@ -250,6 +275,7 @@ class MDACSAuthUserList extends React.Component {
 
 /// <summary>
 /// </summary>
+/// <prop name="onUserDelete"></prop>
 /// <prop name="user"></prop>
 /// <prop name="current_user"></prop>
 class MDACSAuthUserItem extends React.Component {
@@ -266,46 +292,89 @@ class MDACSUserSettings extends React.Component {
         this.onUserFilterChange = this.onUserFilterChange.bind(this);
         this.onIsAdminChange = this.onIsAdminChange.bind(this);
         this.onCanDeleteChange = this.onCanDeleteChange.bind(this);
+        this.onDeleteUser = this.onDeleteUser.bind(this);
 
         this.state = {
-            user: props.user
+            user_password: '',
+            user_user: props.user.user,
+            user_name: props.user.name,
+            user_phone: props.user.phone,
+            user_email: props.user.email,
+            user_admin: props.user.admin,
+            user_can_delete: props.user.can_detel,
+            user_userfilter: props.user.userfilter,
         };
     }
 
     onRealNameChange(e) {
-
+        if (this.props.current_admin || this.props.current_user == this.state.user_user)
+            this.setState({
+                user_name: e.target.value,
+            });
     }
 
     onPasswordChange(e) {
-
+        if (this.props.current_admin || this.props.current_user == this.state.user_user)
+            this.setState({
+                user_password: e.target.value,
+            });
     }
 
     onPhoneChange(e) {
-
+        if (this.props.current_admin || this.props.current_user == this.state.user_user)
+            this.setState({
+                user_phone: e.target.value,
+            });
     }
 
     onEMailChange(e) {
-
+        if (this.props.current_admin || this.props.current_user == this.state.user_user)
+            this.setState({
+                user_email: e.target.value,
+            });
     }
 
     onUserFilterChange(e) {
-
+        if (this.props.current_admin || this.props.current_user == this.state.user_user)
+            this.setState({
+                user_userfilter: e.target.value,
+            });
     }
 
     onIsAdminChange(e) {
-
+        if (this.props.current_admin || this.props.current_user == this.state.user_user)
+            this.setState({
+                user_admin: e.target.value,
+            });
     }
 
     onCanDeleteChange(e) {
+        if (this.props.current_admin || this.props.current_user == this.state.user_user)
+            this.setState({
+                user_can_delete: e.target.value,
+            });
+    }
 
+    onDeleteUser() {
+        if (this.props.current_admin) {
+            this.props.dao_auth.userDelete(
+                this.state.user_user,
+                () => {
+                    if (this.props.onUserDelete) {
+                        this.props.onUserDelete();
+                    }
+                },
+                () => {
+
+                }
+            );
+        }
     }
 
     render() {
-        let isAdmin = this.state.user.admin;
-        let canDelete = this.state.user.can_delete;
         let disabledForm;
 
-        if (!this.props.current_admin && this.props.current_user != this.state.user.user) {
+        if (!this.props.current_admin && this.props.current_user != this.state.user_user) {
             disabledForm = true;
         } else {
             disabledForm = false;
@@ -322,25 +391,183 @@ class MDACSUserSettings extends React.Component {
             b = <Button type="submit">Save Changes</Button>;
         }
 
+        let c;
+
+        if (this.props.current_admin) {
+            c = (<div><ControlLabel>User Filter Expression</ControlLabel>
+                <FormControl type="text" value={this.state.user_userfilter ? this.state.user_userfilter : ''} placeholder="Filter expression." onChange={this.onUserFilterChange} />
+                <Checkbox defaultChecked={this.state.user_admin} onChange={this.onIsAdminChange}>Administrator</Checkbox>
+                <Checkbox defaultChecked={this.state.user_can_delete} onChange={this.onCanDeleteChange}>Can Delete</Checkbox>
+                <div><Button onClick={this.onDeleteUser}>Delete User</Button></div>
+            </div>);
+        } else {
+            c = <div>Some settings have been disabled and hidden because you are not an <code>administrator</code>.</div>;
+        }
+
         let a = (<form>
             <FormGroup disabled={disabledForm}>
             <ControlLabel>Real Name</ControlLabel>
-            <FormControl type="text" value={this.state.user.name} placeholder="Real name." onChange={this.onRealNameChange} />
+            <FormControl type="text" value={this.state.user_name} placeholder="Real name." onChange={this.onRealNameChange} />
             <ControlLabel>Password</ControlLabel>
-            <FormControl type="text" value="" placeholder="Only set to new password if changing the password." onChange={this.onPasswordChange} />
+            <FormControl type="text" value={this.state.user_password} placeholder="Only set to new password if changing the password." onChange={this.onPasswordChange} />
             <ControlLabel>Contact Phone</ControlLabel>
-            <FormControl type="text" value={this.state.user.phone ? this.state.user.phone : ''} placeholder="Phone." onChange={this.onPhoneChange} />
+            <FormControl type="text" value={this.state.user_phone ? this.state.user_phone : ''} placeholder="Phone." onChange={this.onPhoneChange} />
             <ControlLabel>Contact E-Mail</ControlLabel>
-            <FormControl type="text" value={this.state.user.email ? this.state.user.email : ''} placeholder="E-Mail." onChange={this.onEMailChange} />
-            <ControlLabel>User Filter Expression</ControlLabel>
-            <FormControl type="text" value={this.state.user.userfilter ? this.state.user.userfilter : ''} placeholder="Filter expression." onChange={this.onUserFilterChange} />
-            <Checkbox defaultChecked={isAdmin} onChange={this.onIsAdminChange}>Administrator</Checkbox>
-            <Checkbox defaultChecked={canDelete} onChange={this.onCanDeleteChange}>Can Delete</Checkbox>
-            {b}
+            <FormControl type="text" value={this.state.user_email ? this.state.user_email : ''} placeholder="E-Mail." onChange={this.onEMailChange} />
+            {c}
+                <div>
+                    {b}
+                </div>
             </FormGroup>
         </form>);
 
         return a;
+    }
+}
+
+/// <prop name="dao_auth></prop>
+/// <prop name="onUserAdded()"></prop>
+class MDACSAuthAddUser extends React.Component {
+    constructor(props) {
+        super(props);
+        
+        this.onExpand = this.onExpand.bind(this);
+        this.onContract = this.onContract.bind(this);
+        this.onInputChange = this.onInputChange.bind(this);
+        this.onAddUser = this.onAddUser.bind(this);
+        this.onDismissAlert = this.onDismissAlert.bind(this);
+
+        this.state = {
+            expanded: props.expanded == true ? true : false,
+            user_name: '',
+            user_user: '',
+            user_password: '',
+            user_phone: '',
+            user_email: '',
+            user_admin: false,
+            user_can_delete: false,
+            user_userfilter: '',
+            alert: null,
+            success: false,
+        }
+    }
+
+    onExpand() {
+        console.log('expanding');
+        this.setState({
+            expanded: true,
+            success: false,
+            alert: null,
+        });
+    }
+
+    onContract() {
+        this.setState({
+            expanded: false,
+            success: false,
+            alert: null,
+        });
+    }
+
+    onInputChange(id, e) {
+        let tmp = {};
+
+        tmp['user_' + id] = e.target.value;
+
+        console.log('@@@', 'user_' + id, e.target.value);
+
+        this.setState(tmp)
+    }
+
+    onAddUser(e) {
+        e.preventDefault();
+
+        let user = {
+            user: this.state.user_user,
+            name: this.state.user_name,
+            phone: this.state.user_phone,
+            email: this.state.user_email,
+            admin: this.state.user_admin,
+            can_delete: this.state.user_can_delete,
+            userfilter: this.state.user_userfilter,
+        };
+
+        console.log('adding user');
+
+        this.props.dao_auth.userSet(
+            user,
+            (resp) => {
+                console.log('got success');
+                this.setState({
+                    success: true,
+                    alert: null,
+                    expanded: false,
+                });
+
+                if (this.props.onAddedUser)
+                    this.props.onAddedUser();
+            },
+            (res) => {
+                this.setState({
+                    alert: 'The add user command failed to execute on the server.',
+                });
+            },
+        );
+    }
+
+    onDismissAlert() {
+        this.setState({
+            alert: null,
+        });
+    }
+
+    render() {
+        if (this.state.expanded) {
+            let alertstuff;
+
+            if (this.state.alert === null) {
+                alertstuff = null;
+            } else {
+                alertstuff = <div>
+                    <Alert bsStyle="warning" onDismiss={this.onDismissAlert}>
+                        <strong>Opps..</strong> there was a problem adding the user. The server rejected the command.
+                    </Alert>
+                </div>;
+            }
+
+            return (<span>
+                <Button onClick={this.onContract}>Cancel</Button>
+                <form onSubmit={this.onAddUser}>
+                    <FormGroup>
+                        <ControlLabel>Real Name</ControlLabel>
+                        <FormControl type="text" value={this.state.user_name} placeholder="Real name." onChange={e => this.onInputChange('name', e)} />
+                        <ControlLabel>Username</ControlLabel>
+                        <FormControl type="text" value={this.state.user_user} placeholder="The username used to login." onChange={e => this.onInputChange('user', e)} />
+                        <ControlLabel>Password</ControlLabel>
+                        <FormControl type="text" value={this.state.user_password} placeholder="Only set to new password if changing the password." onChange={e => this.onInputChange('password', e)} />
+                        <ControlLabel>Contact Phone</ControlLabel>
+                        <FormControl type="text" value={this.state.user_phone ? this.state.user_phone : ''} placeholder="Phone." onChange={e => this.onInputChange('phone', e)} />
+                        <ControlLabel>Contact E-Mail</ControlLabel>
+                        <FormControl type="text" value={this.state.user_email ? this.state.user_email : ''} placeholder="E-Mail." onChange={e => this.onInputChange('email', e)} />
+                        <ControlLabel>User Filter Expression</ControlLabel>
+                        <FormControl type="text" value={this.state.user_userfilter ? this.state.user_userfilter : ''} placeholder="Filter expression." onChange={e => this.onInputChange('userfilter', e)} />
+                        <Checkbox defaultChecked={this.state.user_admin} onChange={e => this.onInputChange('admin', e)}>Administrator</Checkbox>
+                        <Checkbox defaultChecked={this.state.user_can_delete} onChange={e => this.onInputChange('can_delete', e)}>Can Delete</Checkbox>
+                        {alertstuff}
+                        <Button type="submit">Save New User</Button>;
+                    </FormGroup>
+                </form>
+            </span>);
+        } else {
+            if (this.state.success === true) {
+                return <span>
+                    <Alert bsStyle="success">The user was added.</Alert>
+                    <Button onClick={this.onExpand}>Add User</Button>
+                </span>;
+            } else {
+                return <span><Button onClick={this.onExpand}>Add User</Button></span>;
+            }
+        }
     }
 }
 
@@ -357,13 +584,19 @@ class MDACSAuthAppBody extends React.Component {
     constructor(props) {
         super(props);
 
+        this.onAddedUser = this.onAddedUser.bind(this);
         this.onLogout = this.onLogout.bind(this);
+        this.refresh = this.refresh.bind(this);
 
         this.state = {
             userlist: null,
             lasterror: null,
         };
 
+        this.refresh();
+    }
+
+    refresh() {
         this.props.dao_auth.userList(
             (resp) => {
                 this.setState({
@@ -388,6 +621,10 @@ class MDACSAuthAppBody extends React.Component {
     componentWillUnmount() {
     }
 
+    onAddedUser() {
+        this.refresh();
+    }
+
     onLogout(e) {
         if (this.props.onLogout) {
             this.props.onLogout();
@@ -400,12 +637,17 @@ class MDACSAuthAppBody extends React.Component {
         // if we have userlist then render items
             // if not admin then only show our information
         let tabs;
+
         if (this.state.userlist == null) {
             tabs = null;
         } else {
             tabs = this.state.userlist.map(user =>
                 <Tab key={user.user} eventKey={user.user} title={user.user}>
-                    <MDACSUserSettings current_admin={this.props.user_isadmin} current_user={this.props.user_username} user={user} />
+                    <MDACSUserSettings
+                        dao_auth={this.props.dao_auth}
+                        current_admin={this.props.user_isadmin}
+                        current_user={this.props.user_username}
+                        user={user} />
                 </Tab>
             );
         }
@@ -444,11 +686,19 @@ class MDACSAuthAppBody extends React.Component {
                 </Panel.Body>
             </Panel>
             <Panel>
-                <Panel.Heading>Settings</Panel.Heading>
+                <Panel.Heading>Existing Users</Panel.Heading>
                 <Panel.Body>
                         <Tabs defaultActiveKey={1} id="User Settings Tabs">
                             {tabs != null ? tabs : ''}
                         </Tabs>
+                </Panel.Body>
+            </Panel>
+            <Panel>
+                <Panel.Heading>Add User</Panel.Heading>
+                <Panel.Body>
+                        <MDACSAuthAddUser
+                            onAddedUser={this.onAddedUser}
+                            dao_auth={this.props.dao_auth} />
                 </Panel.Body>
             </Panel>
             </div>

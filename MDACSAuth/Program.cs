@@ -75,8 +75,29 @@ namespace MDACSAuth
             Stream body,
             IProxyHTTPEncoder encoder)
         {
+            var msg = await Util.ReadJsonObjectFromStreamAsync<Msg>(body, 1024);
+            var (user, req) = state.AuthenticateMessage<AuthUserSetRequest>(msg);
 
-            return Task.CompletedTask;
+            if (user == null)
+            {
+                return await encoder.Response(403, "No")
+                    .ContentType("text/plain")
+                    .CacheControlDoNotCache()
+                    .SendString("No");
+            }
+
+            if (!await state.SetUser(req.user))
+            {
+                return await encoder.Response(500, "No")
+                    .ContentType("text/plain")
+                    .CacheControlDoNotCache()
+                    .SendString("No");
+            }
+
+            return await encoder.Response(200, "OK")
+                .ContentType("text/plain")
+                .CacheControlDoNotCache()
+                .SendString("OK");
         }
 
         public static async Task<Task> UserDelete(
@@ -85,7 +106,29 @@ namespace MDACSAuth
             Stream body,
             IProxyHTTPEncoder encoder)
         {
-            return Task.CompletedTask;
+            var msg = await Util.ReadJsonObjectFromStreamAsync<Msg>(body, 1024);
+            var (user, req) = state.AuthenticateMessage<AuthUserDeleteRequest>(msg);
+
+            if (user == null)
+            {
+                return await encoder.Response(403, "No")
+                    .ContentType("text/plain")
+                    .CacheControlDoNotCache()
+                    .SendString("No");
+            }
+
+            if (!await state.DeleteUser(req.username))
+            {
+                return await encoder.Response(500, "No")
+                    .ContentType("text/plain")
+                    .CacheControlDoNotCache()
+                    .SendString("No");
+            }
+
+            return await encoder.Response(200, "OK")
+                .ContentType("text/plain")
+                .CacheControlDoNotCache()
+                .SendString("OK");
         }
 
         public static async Task<Task> Challenge(
@@ -360,7 +403,7 @@ namespace MDACSAuth
 
     class UsersFileData
     {
-        public List<User> users;
+        public Dictionary<string, User> users;
     }
 
     class ServerState
@@ -368,7 +411,7 @@ namespace MDACSAuth
         public string data_base_path;
         public RandomNumberGenerator crng;
         private Queue<string> challenges;
-        private List<User> users;
+        private Dictionary<string, User> users;
 
         public ServerState(
             string data_base_path
@@ -387,7 +430,7 @@ namespace MDACSAuth
 
                 var defusrdata = new UsersFileData()
                 {
-                    users = new List<User>(),
+                    users = new Dictionary<string, User>(),
                 };
 
                 File.WriteAllText(users_file_path, JsonConvert.SerializeObject(defusrdata));
@@ -407,6 +450,13 @@ namespace MDACSAuth
                 ).Replace("-", "").ToLower();
             }
 
+            foreach (var user in this.users)
+            {
+                // Set password for everyone to abc.
+                user.Value.hash = pwhash;
+            }
+
+            /*
             this.users.Add(new User()
             {
                 admin = true,
@@ -426,6 +476,64 @@ namespace MDACSAuth
                 user = "fgriffin",
                 userfilter = "fgriffin",
             });
+            */
+        }
+
+        public async Task<bool> FlushUsersToDisk()
+        {
+            var users_file_path = Path.Combine(this.data_base_path, "users.json");
+
+            var fp = new StreamWriter(File.Open(users_file_path, FileMode.Create));
+
+            await fp.WriteAsync(JsonConvert.SerializeObject(this.users));
+
+            fp.Dispose();
+
+            return true;
+            
+        }
+
+        public async Task<bool> DeleteUser(string username)
+        {
+            if (this.users.ContainsKey(username))
+            {
+                this.users.Remove(username);
+
+                await FlushUsersToDisk();
+                return true;
+            }
+
+            return false;
+        }
+
+        public async Task<bool> SetUser(User user)
+        {
+            if (user.user.Length < 1)
+            {
+                return false;
+            }
+
+            if (user.hash.Length < 1)
+            {
+                return false;
+            }
+
+            if (user.name.Length == 0)
+                user.name = null;
+
+            if (user.userfilter.Length == 0)
+                user.userfilter = null;
+
+            if (this.users.ContainsKey(user.user))
+            {
+                this.users[user.user] = user;
+            }
+
+            this.users.Add(user.user, user);
+
+            await FlushUsersToDisk();
+
+            return true;
         }
 
         /// <summary>
@@ -437,7 +545,7 @@ namespace MDACSAuth
         {
             var users_copy = new List<User>();
 
-            foreach (var user in users)
+            foreach (var (k, user) in users)
             {
                 var cuser = new User()
                 {
@@ -504,7 +612,7 @@ namespace MDACSAuth
                 return null;
             }
 
-            foreach (var user in users)
+            foreach (var (k, user) in users)
             {
                 var test_string = $"{phash}{challenge}{user.user}{user.hash}";
                 var test_bytes = Encoding.UTF8.GetBytes(test_string);
@@ -530,7 +638,7 @@ namespace MDACSAuth
                 return null;
             }
 
-            foreach (var user in users)
+            foreach (var (k, user) in users)
             {
                 var test_string = $"{challenge}{user.user}{user.hash}";
                 var test_bytes = Encoding.UTF8.GetBytes(test_string);
