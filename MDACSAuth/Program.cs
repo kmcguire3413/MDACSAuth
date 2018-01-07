@@ -11,6 +11,7 @@ using System.Text;
 using static MDACS.API.Auth;
 using System.Reflection;
 using MDACSAPI;
+using Newtonsoft.Json.Linq;
 
 namespace MDACSAuth
 {
@@ -185,7 +186,17 @@ namespace MDACSAuth
             Stream body,
             IProxyHTTPEncoder encoder)
         {
-            await Util.ReadStreamUntilEndAndDiscardDataAsync(body);
+            var msg = await Util.ReadJsonObjectFromStreamAsync<Msg>(body, 1024);
+            var (user, req) = state.AuthenticateMessage<JObject>(msg);
+
+            if (user == null)
+            {
+                return await encoder.Response(403, "No")
+                    .ContentType("text/plain")
+                    .CacheControlDoNotCache()
+                    .SendString("No");
+            }
+            
 
             var users = state.GetUserList();
 
@@ -405,6 +416,16 @@ namespace MDACSAuth
                 user = "kmcguire",
                 userfilter = null,
             });
+
+            this.users.Add(new User()
+            {
+                admin = false,
+                can_delete = false,
+                hash = pwhash,
+                name = "Fred Griffin",
+                user = "fgriffin",
+                userfilter = "fgriffin",
+            });
         }
 
         /// <summary>
@@ -432,6 +453,43 @@ namespace MDACSAuth
             }
 
             return users_copy;
+        }
+
+        public (User, T) AuthenticateMessage<T>(Msg msg)
+        {
+            User user;
+
+            if (msg.payload == null || msg.auth.hash == null)
+            {
+                // Ensure the payload can never be accidentally used since this
+                // authentication is without a payload hash.
+                msg.payload = null;
+
+                user = Verify(msg.auth.challenge, msg.auth.chash);
+            }
+            else
+            {
+                var payload_hash = BitConverter.ToString(
+                        new SHA512Managed().ComputeHash(
+                            Encoding.UTF8.GetBytes(msg.payload)
+                        )
+                    ).Replace("-", "").ToLower();
+
+                user = VerifyPayload(
+                    msg.auth.challenge,
+                    msg.auth.chash,
+                    payload_hash /* recompute it */
+                );
+            }
+
+            if (user == null)
+            {
+                return (null, default(T));
+            }
+
+            var ret = JsonConvert.DeserializeObject<T>(msg.payload);
+
+            return (user, ret);
         }
 
         /*

@@ -1,3 +1,9 @@
+* commit e3dbb46efd9718d411411aa170846139a600dd9b
+| Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
+| Date:   Sat Jan 6 22:07:53 2018 -0600
+| 
+|     More work. Added bootstrap. Have authentication working.
+| 
 * commit 798d39e2f817e3b3f42c20ee394c3bed8a6267e2
 | Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
 | Date:   Sat Jan 6 15:42:23 2018 -0600

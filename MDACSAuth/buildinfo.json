@@ -1,1 +1,1 @@
-{"git_branch": "nightly", "version": "0.0.201.6070", "git_commit": "798d39e", "git_message_line": "[origin/nightly] More prep work. Focused on learning how to use and about ReactJS while also building an UI for the authentication service. Added superagent instead of large download for jQuery."}
+{"git_branch": "nightly", "version": "0.0.201.6075", "git_commit": "e3dbb46", "git_message_line": "[origin/nightly] More work. Added bootstrap. Have authentication working."}
