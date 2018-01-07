@@ -1,3 +1,9 @@
+* commit 798d39e2f817e3b3f42c20ee394c3bed8a6267e2
+| Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
+| Date:   Sat Jan 6 15:42:23 2018 -0600
+| 
+|     More prep work. Focused on learning how to use and about ReactJS while also building an UI for the authentication service. Added superagent instead of large download for jQuery.
+| 
 * commit 742193633768ad5a5f83be8e0d1f9e9c996d1a5a
 | Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
 | Date:   Thu Jan 4 21:37:26 2018 -0600

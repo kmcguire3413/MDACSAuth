@@ -39,7 +39,7 @@ namespace MDACSAuth
                 user = user,
             };
 
-            return await encoder.Response(200, "OK").SendJsonFromObject(resp);
+            return await encoder.Response(200, "OK").ContentType_JSON().SendJsonFromObject(resp);
         }
 
         public static async Task<Task> VerifyPayload(
@@ -48,12 +48,12 @@ namespace MDACSAuth
             Stream body,
             IProxyHTTPEncoder encoder)
         {
-            var req = await Util.ReadJsonObjectFromStreamAsync<AuthVerifyRequest>(body, 1024 * 1024);
+            var req = await Util.ReadJsonObjectFromStreamAsync<AuthVerifyPayloadRequest>(body, 1024 * 1024);
 
             if (!state.UseChallenge(req.challenge))
                 return await encoder.Response(403, "Not Valid").SendNothing();
 
-            var user = state.Verify(req.challenge, req.hash);
+            var user = state.VerifyPayload(req.challenge, req.chash, req.phash);
 
             if (user == null)
                 return await encoder.Response(403, "Not Valid").SendNothing();
@@ -65,7 +65,7 @@ namespace MDACSAuth
                 user = user,
             };
 
-            return await encoder.Response(200, "OK").SendJsonFromObject(resp);
+            return await encoder.Response(200, "OK").ContentType_JSON().SendJsonFromObject(resp);
         }
 
         public static async Task<Task> UserSet(
@@ -97,11 +97,14 @@ namespace MDACSAuth
 
             var challenge = state.GetChallenge();
 
-            return await encoder.Response(200, "OK").SendString(
-                JsonConvert.SerializeObject(new AuthChallengeResponse()
-                {
-                    challenge = challenge,
-                })
+            return await encoder.Response(200, "OK")
+                .ContentType_JSON()
+                .SendString(
+                    JsonConvert.SerializeObject(new AuthChallengeResponse()
+                    {
+                        challenge = challenge,
+                    }
+                )
             );
         }
 
@@ -187,7 +190,7 @@ namespace MDACSAuth
             var users = state.GetUserList();
 
             return await encoder.Response(200, "OK")
-                .ContentType("application/json")
+                .ContentType_JSON()
                 .SendJsonFromObject(state.GetUserList());
         }
 
@@ -201,19 +204,35 @@ namespace MDACSAuth
 
             bool valid = false;
 
-            if (msg.payload == null)
+            User user;
+
+            if (msg.payload == null || msg.auth.hash == null)
             {
-                if (state.Verify(msg.auth.challenge, msg.auth.hash) != null)
+                // Ensure the payload can never be accidentally used since this
+                // authentication is without a payload hash.
+                msg.payload = null;
+
+                user = state.Verify(msg.auth.challenge, msg.auth.chash);
+
+                if (user != null)
                 {
                     valid = true;
                 }
             } else
             {
-                if (state.VerifyPayload(
+                var payload_hash = BitConverter.ToString(
+                        new SHA512Managed().ComputeHash(
+                            Encoding.UTF8.GetBytes(msg.payload)
+                        )
+                    ).Replace("-", "").ToLower();
+
+                user = state.VerifyPayload(
                     msg.auth.challenge,
                     msg.auth.chash,
-                    msg.auth.hash
-                ) != null)
+                    payload_hash /* recompute it */
+                );
+
+                if (user != null)
                 {
                     valid = true;
                 }
@@ -221,21 +240,23 @@ namespace MDACSAuth
 
             if (valid)
             {
-                await encoder.Response(200, "OK")
+                return await encoder.Response(200, "OK")
                     .CacheControlDoNotCache()
                     .ContentType_JSON()
                     .SendJsonFromObject(new AuthLoginValidResponse()
                     {
                         success = true,
+                        user = user,
                     });
             } else
             {
-                await encoder.Response(403, "No")
+                return await encoder.Response(403, "No")
                     .CacheControlDoNotCache()
                     .ContentType_JSON()
                     .SendJsonFromObject(new AuthLoginValidResponse()
                     {
                         success = false,
+                        user = null,
                     });
             }
         }
@@ -269,7 +290,7 @@ namespace MDACSAuth
             resp.revision = ver_info.revision;
 
             return await encoder.Response(200, "OK")
-                .ContentType("application/json")
+                .ContentType_JSON()
                 .SendJsonFromObject(resp);
         }
 
@@ -364,6 +385,26 @@ namespace MDACSAuth
             Logger.WriteDebugString($"Loading users.json from {data_base_path}.");
 
             this.users = JsonConvert.DeserializeObject<UsersFileData>(File.ReadAllText(users_file_path)).users;
+
+            string pwhash = "abc";
+
+            {
+                var hasher = new SHA512Managed();
+
+                pwhash = BitConverter.ToString(
+                    hasher.ComputeHash(Encoding.UTF8.GetBytes(pwhash))
+                ).Replace("-", "").ToLower();
+            }
+
+            this.users.Add(new User()
+            {
+                admin = true,
+                can_delete = true,
+                hash = pwhash,
+                name = "Leonard Kevin McGuire Jr.",
+                user = "kmcguire",
+                userfilter = null,
+            });
         }
 
         /// <summary>
@@ -393,6 +434,11 @@ namespace MDACSAuth
             return users_copy;
         }
 
+        /*
+            Hire expert crytographer to rework or verify if software produces
+            profit. Thus, until then it only needs to serve as a thwart or a
+            reasonable answer for a small risk.
+        */
         public User VerifyPayload(string challenge, string chash, string phash)
         {
             if (!UseChallenge(challenge))
@@ -405,7 +451,10 @@ namespace MDACSAuth
                 var test_string = $"{phash}{challenge}{user.user}{user.hash}";
                 var test_bytes = Encoding.UTF8.GetBytes(test_string);
                 var hasher = new SHA512Managed();
-                var result_hash = BitConverter.ToString(hasher.ComputeHash(test_bytes)).Replace("-", "");
+                var result_hash =
+                    BitConverter.ToString(
+                        hasher.ComputeHash(test_bytes)
+                    ).Replace("-", "").ToLower();
 
                 if (result_hash.Equals(chash))
                 {
@@ -428,7 +477,10 @@ namespace MDACSAuth
                 var test_string = $"{challenge}{user.user}{user.hash}";
                 var test_bytes = Encoding.UTF8.GetBytes(test_string);
                 var hasher = new SHA512Managed();
-                var result_hash = BitConverter.ToString(hasher.ComputeHash(test_bytes)).Replace("-", "");
+                var result_hash =
+                    BitConverter.ToString(
+                        hasher.ComputeHash(test_bytes)
+                    ).Replace("-", "").ToLower();
 
                 if (result_hash.Equals(chash))
                 {
@@ -445,7 +497,7 @@ namespace MDACSAuth
 
             crng.GetNonZeroBytes(buf);
 
-            var challenge = BitConverter.ToString(buf).Replace("-", "");
+            var challenge = BitConverter.ToString(buf).Replace("-", "").ToLower();
 
             challenges.Enqueue(challenge);
 

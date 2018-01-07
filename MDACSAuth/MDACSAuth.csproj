@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="node_modules\**" />
+    <EmbeddedResource Remove="node_modules\**" />
+    <None Remove="node_modules\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="webres\angular.min.js" />
     <None Remove="webres\app.js" />
     <None Remove="webres\app.jsx" />
@@ -38,7 +44,7 @@
       <HintPath>..\..\MDACSDatabase\MDACSAPI\bin\Debug\netstandard2.0\MDACSAPI.dll</HintPath>
     </Reference>
     <Reference Include="MDACSHTTPServer">
-      <HintPath>..\..\MDACSHTTPServer\bin\Debug\netstandard2.0\MDACSHTTPServer.dll</HintPath>
+      <HintPath>..\..\MDACSHTTPServer\bin\Release\netstandard2.0\MDACSHTTPServer.dll</HintPath>
     </Reference>
   </ItemGroup>
 

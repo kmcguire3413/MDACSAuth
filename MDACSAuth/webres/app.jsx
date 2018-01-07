@@ -1,4 +1,9 @@
-﻿
+﻿const request = window.superagent;
+const FormGroup = ReactBootstrap.Alert;
+const ControlLabel = ReactBootstrap.ControlLabel;
+const FormControl = ReactBootstrap.FormControl;
+const Button = ReactBootstrap.Button;
+
 class AuthNetworkDAO {
     constructor(
         url_auth
@@ -21,12 +26,17 @@ class AuthNetworkDAO {
     version() {
     }
 
+    setCredentials(username, password) {
+        this.dao.setUsername(username);
+        this.dao.setPassword(password);
+    }
+
     isLoginValid(success, failure) {
         this.dao.authenticatedTransaction(
             '/is-login-valid',
             {},
-            () => {
-                success();
+            (resp) => {
+                success(JSON.parse(resp.text).user);
             },
             (res) => {
                 failure(res);
@@ -41,7 +51,7 @@ class BasicNetworkDAO {
         url_service
     ) {
         this.url_auth = url_auth;
-        this.url_db = url_db;
+        this.url_service = url_service;
     }
 
     setUsername(username) {
@@ -59,7 +69,7 @@ class BasicNetworkDAO {
                 if (err) {
                     failure(err);
                 } else {
-                    success(JSON.parse(res).challenge);
+                    success(JSON.parse(res.text).challenge);
                 }
             });
     }
@@ -74,13 +84,12 @@ class BasicNetworkDAO {
         this.challenge(
             (challenge) => {
                 let phash = sha512(payload);
-                let secret = phash + challenge + this.username + this.hashed_password;
-                let chash = sha512(secret);
+                let secret = sha512(phash + challenge + this.username + this.hashed_password);
                 let _msg = {
                     auth: {
                         challenge: challenge,
-                        chash: chash,
-                        payload: true,
+                        chash: secret,
+                        hash: phash,
                     },
                     payload: payload,
                 };
@@ -128,6 +137,7 @@ class MDACSLineInput extends React.Component {
     }
 
     onChange(event) {
+        this.props.onChange(event.target.value);
         this.setState({ value: event.target.value });
     }
 
@@ -139,6 +149,12 @@ class MDACSLineInput extends React.Component {
     }
 }
 
+/// <summary>
+/// Provides a login UI with callback support to a DAO object to keep
+/// the username and password field of the DAO synchronized. Also, provides
+/// a login button that simply checks that the login is valid.
+/// </summary>
+/// <prop name="onCheckLogin(username, password)">Callback when login should be checked.</prop>
 class MDACSLogin extends React.Component {
     constructor(props) {
         super(props);
@@ -149,6 +165,11 @@ class MDACSLogin extends React.Component {
             this.handlePasswordChange.bind(this);
         this.handleSubmit =
             this.handleSubmit.bind(this);
+
+        this.state = {
+            username: '',
+            password: '',
+        };
     }
 
     componentDidMount() {
@@ -159,25 +180,45 @@ class MDACSLogin extends React.Component {
         
     }
 
-    handleUsernameChange(event) {
-        this.setState({ username: event.target.value });
+    handleUsernameChange(e) {
+        this.setState({ username: e.target.value });
     }
 
-    handlePasswordChange(event) {
-        this.setState({ password: event.target.value });
+    handlePasswordChange(e) {
+        this.setState({ password: e.target.value });
     }
 
     handleSubmit(event) {
+        // Will state be up to date when this is called?
         event.preventDefault();
+
+        if (this.props.onCheckLogin) {
+            this.props.onCheckLogin(this.state.username, this.state.password);
+        }
     }
 
     render() {
         return (
             <div>
                 <form onSubmit={this.handleSubmit}>
-                    <MDACSLineInput label="Username" value="" onChange={this.handleUsernameChange} />
-                    <MDACSLineInput label="Password" value="" onChange={this.handlePasswordChange} />
-                    <input type="submit" value="Login" />
+                    <FormGroup>
+                        <ControlLabel>Username</ControlLabel>
+                        <FormControl
+                            type="text"
+                            value={this.state.username}
+                            placeholder="Enter username"
+                            onChange={this.handleUsernameChange}
+                        />
+                        <ControlLabel>Password</ControlLabel>
+                        <FormControl
+                            type="text"
+                            value={this.state.password}
+                            placeholder="Enter password"
+                            onChange={this.handlePasswordChange}
+                        />
+                        <FormControl.Feedback />
+                        <Button type="submit">Login</Button>
+                    </FormGroup>
                 </form>
             </div>
         );
@@ -203,9 +244,18 @@ class MDACSAuthUserList extends React.Component {
 class MDACSAuthUserItem extends React.Component {
 }
 
+/// <summary>
+/// </summary>
+/// <prop name="user_username"></prop>
+/// <prop name="user_realname"></prop>
+/// <prop name="user_isadmin"></prop>
+/// <prop name="user_candelete"></prop>
+/// <prop name="user_userfilter"></prop>
 class MDACSAuthAppBody extends React.Component {
     constructor(props) {
         super(props);
+
+        // queue async fetch of userlist
     }
 
     componentDidMount() {
@@ -215,7 +265,10 @@ class MDACSAuthAppBody extends React.Component {
     }
 
     render() {
-
+        // display login information
+        // display button to refresh userlist
+        // if we have userlist then render items
+            // if not admin then only show our information
     }
 }
 
@@ -223,6 +276,10 @@ class MDACSAuthAppBody extends React.Component {
 class MDACSAuthApp extends React.Component {
     constructor(props) {
         super(props);
+
+        this.onCheckLogin = this.onCheckLogin.bind(this);
+
+        this.dao_auth = new AuthNetworkDAO('.');
 
         this.state = {
             need_login_shown: true,
@@ -235,11 +292,35 @@ class MDACSAuthApp extends React.Component {
     componentWillUnmount() {
     }
 
+    onCheckLogin(username, password) {
+        this.dao_auth.setCredentials(username, password);
+        this.dao_auth.isLoginValid(
+            (user) => {
+                console.log('user', user);
+                this.setState({
+                    need_login_shown: false,
+                    user: user,
+                });
+            },
+            (res) => {
+                alert('invalid login');
+            },
+        );
+    }
+
     render() {
         if (this.state.need_login_shown) {
-            return <div className="MDACSAuthAppContainer"><MDACSLogin /></div>;
+            return <div className="MDACSAuthAppContainer"><MDACSLogin onCheckLogin={this.onCheckLogin} /></div>;
         } else {
-            return <div className="MDACSAuthAppContainer"><MDACSAuthAppBody /></div>;
+            return <div className="MDACSAuthAppContainer">
+                <MDACSAuthAppBody
+                    user_username={this.state.user.user}
+                    user_realname={this.state.user.name}
+                    user_isadmin={this.state.user.admin}
+                    user_candelete={this.state.user.can_delete}
+                    user_userfilter={this.state.user.userfilter}
+                />
+            </div>;
         }
     }
 }
