@@ -1,1 +1,1 @@
-{"git_branch": "nightly", "version": "0.0.201.7079", "git_commit": "c18d52e", "git_message_line": "[origin/nightly] Interface is almost completed. The functionality to add users, delete users, and push changes is still awaiting implementation."}
+{"git_branch": "nightly", "version": "0.0.201.8095", "git_commit": "e72f5fb", "git_message_line": "[origin/nightly] Finish implementation to add and delete users. Added both UI and service code. Still need to test the code to ensure that it works."}

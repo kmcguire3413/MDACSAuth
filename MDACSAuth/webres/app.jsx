@@ -37,7 +37,7 @@ class AuthNetworkDAO {
         );        
     }
 
-    userDelete(username) {
+    userDelete(username, success, failure) {
         this.dao.authenticatedTransaction(
             '/user-delete',
             {
@@ -158,39 +158,6 @@ class BasicNetworkDAO {
     }
 }
 
-
-class MDACSButton extends React.Component {
-
-}
-
-class MDACSInput extends React.Component {
-
-}
-
-class MDACSLineInput extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.render = this.render.bind(this);
-        this.onChange = this.onChange.bind(this);
-        this.state = {
-            value: props.value
-        };
-    }
-
-    onChange(event) {
-        this.props.onChange(event.target.value);
-        this.setState({ value: event.target.value });
-    }
-
-    render() {
-        return (<label>
-                    {this.props.label}: 
-                    <input type="text" value={this.state.value} onChange={this.onChange} />
-                </label>);
-    }
-}
-
 /// <summary>
 /// Provides a login UI with callback support to a DAO object to keep
 /// the username and password field of the DAO synchronized. Also, provides
@@ -246,6 +213,7 @@ class MDACSLogin extends React.Component {
                     <FormGroup>
                         <ControlLabel>Username</ControlLabel>
                         <FormControl
+                            id="login_username"
                             type="text"
                             value={this.state.username}
                             placeholder="Enter username"
@@ -253,13 +221,14 @@ class MDACSLogin extends React.Component {
                         />
                         <ControlLabel>Password</ControlLabel>
                         <FormControl
+                            id="login_password"
                             type="text"
                             value={this.state.password}
                             placeholder="Enter password"
                             onChange={this.handlePasswordChange}
                         />
                         <FormControl.Feedback />
-                        <Button type="submit">Login</Button>
+                        <Button id="login_submit" type="submit">Login</Button>
                     </FormGroup>
                 </form>
             </div>
@@ -293,6 +262,7 @@ class MDACSUserSettings extends React.Component {
         this.onIsAdminChange = this.onIsAdminChange.bind(this);
         this.onCanDeleteChange = this.onCanDeleteChange.bind(this);
         this.onDeleteUser = this.onDeleteUser.bind(this);
+        this.onUpdateUser = this.onUpdateUser.bind(this);
 
         this.state = {
             user_password: '',
@@ -301,8 +271,9 @@ class MDACSUserSettings extends React.Component {
             user_phone: props.user.phone,
             user_email: props.user.email,
             user_admin: props.user.admin,
-            user_can_delete: props.user.can_detel,
+            user_can_delete: props.user.can_delete,
             user_userfilter: props.user.userfilter,
+            success: false,
         };
     }
 
@@ -371,6 +342,40 @@ class MDACSUserSettings extends React.Component {
         }
     }
 
+    onUpdateUser(e) {
+        e.preventDefault();
+        let user = {
+            user: this.state.user_user,
+            name: this.state.user_name,
+            phone: this.state.user_phone,
+            email: this.state.user_email,
+            hash: sha512(this.state.user_password),
+            admin: this.state.user_admin === 'on' ? true : false,
+            can_delete: this.state.user_can_delete === 'on' ? true : false,
+            userfilter: this.state.user_userfilter,
+        };
+
+        console.log('updating user');
+
+        this.props.dao_auth.userSet(
+            user,
+            (resp) => {
+                this.setState({
+                    success: true,
+                });
+
+                if (this.props.onAddedUser)
+                    this.props.onAddedUser();
+            },
+            (res) => {
+                this.setState({
+                    success: false,
+                    alert: 'The update user command failed to execute on the server.',
+                });
+            },
+        );
+    }
+
     render() {
         let disabledForm;
 
@@ -381,39 +386,63 @@ class MDACSUserSettings extends React.Component {
         }
 
         let b;
+        let d;
 
         if (disabledForm) {
-            b = <span>
-                No changes can be saved.
-                You are not an <code>administrator</code> nor is this <code>you</code>.
-            </span>;
+            b =
+                <div>
+                <div>No changes can be saved.</div>
+                <div>You are not an <code>administrator</code> nor is this <code>you</code>.</div>
+                </div>;
+            d = null;
         } else {
-            b = <Button type="submit">Save Changes</Button>;
+            if (this.state.success) {
+                b = <div>
+                    <Alert bsStyle="success">
+                        The update was successful.
+                    </Alert>
+                    <Button id="user_settings_save_changes_button" type="submit">Save Changes</Button>
+                    </div>;
+            } else {
+                if (this.state.alert !== null) {
+                    b = <div>
+                        <Alert bsStyle="warning">
+                            {this.state.alert}
+                        </Alert>
+                        <Button id="user_settings_save_changes_button" type="submit">Save Changes</Button>
+                        </div>;
+                } else {
+                    b = <div>
+                        <Button id="user_settings_save_changes_button" type="submit">Save Changes</Button>
+                        </div>;
+                }
+            }
         }
 
         let c;
 
         if (this.props.current_admin) {
             c = (<div><ControlLabel>User Filter Expression</ControlLabel>
-                <FormControl type="text" value={this.state.user_userfilter ? this.state.user_userfilter : ''} placeholder="Filter expression." onChange={this.onUserFilterChange} />
-                <Checkbox defaultChecked={this.state.user_admin} onChange={this.onIsAdminChange}>Administrator</Checkbox>
-                <Checkbox defaultChecked={this.state.user_can_delete} onChange={this.onCanDeleteChange}>Can Delete</Checkbox>
-                <div><Button onClick={this.onDeleteUser}>Delete User</Button></div>
+                <FormControl id="user_settings_userfilter" type="text" value={this.state.user_userfilter ? this.state.user_userfilter : ''} placeholder="Filter expression." onChange={this.onUserFilterChange} />
+                <Checkbox id="user_settings_admin" defaultChecked={this.state.user_admin} onChange={this.onIsAdminChange}>Administrator</Checkbox>
+                <Checkbox id="user_settings_can_delete" defaultChecked={this.state.user_can_delete} onChange={this.onCanDeleteChange}>Can Delete</Checkbox>
+                <div><Button id="user_settings_delete_user_button" onClick={this.onDeleteUser}>Delete User</Button></div>
             </div>);
         } else {
             c = <div>Some settings have been disabled and hidden because you are not an <code>administrator</code>.</div>;
         }
 
-        let a = (<form>
+        let a = (<form id="user_settings_form" onSubmit={this.onUpdateUser}>
+            <div style={{ display: 'hidden' }} id="user_settings_username" data-test={this.props.this_username}></div>
             <FormGroup disabled={disabledForm}>
             <ControlLabel>Real Name</ControlLabel>
-            <FormControl type="text" value={this.state.user_name} placeholder="Real name." onChange={this.onRealNameChange} />
+            <FormControl id="user_settings_realname" type="text" value={this.state.user_name} placeholder="Real name." onChange={this.onRealNameChange} />
             <ControlLabel>Password</ControlLabel>
-            <FormControl type="text" value={this.state.user_password} placeholder="Only set to new password if changing the password." onChange={this.onPasswordChange} />
+            <FormControl id="user_settings_password" type="text" value={this.state.user_password} placeholder="Only set to new password if changing the password." onChange={this.onPasswordChange} />
             <ControlLabel>Contact Phone</ControlLabel>
-            <FormControl type="text" value={this.state.user_phone ? this.state.user_phone : ''} placeholder="Phone." onChange={this.onPhoneChange} />
+            <FormControl id="user_settings_phone" type="text" value={this.state.user_phone ? this.state.user_phone : ''} placeholder="Phone." onChange={this.onPhoneChange} />
             <ControlLabel>Contact E-Mail</ControlLabel>
-            <FormControl type="text" value={this.state.user_email ? this.state.user_email : ''} placeholder="E-Mail." onChange={this.onEMailChange} />
+            <FormControl id="user_settings_email" type="text" value={this.state.user_email ? this.state.user_email : ''} placeholder="E-Mail." onChange={this.onEMailChange} />
             {c}
                 <div>
                     {b}
@@ -453,7 +482,6 @@ class MDACSAuthAddUser extends React.Component {
     }
 
     onExpand() {
-        console.log('expanding');
         this.setState({
             expanded: true,
             success: false,
@@ -474,8 +502,6 @@ class MDACSAuthAddUser extends React.Component {
 
         tmp['user_' + id] = e.target.value;
 
-        console.log('@@@', 'user_' + id, e.target.value);
-
         this.setState(tmp)
     }
 
@@ -487,17 +513,15 @@ class MDACSAuthAddUser extends React.Component {
             name: this.state.user_name,
             phone: this.state.user_phone,
             email: this.state.user_email,
-            admin: this.state.user_admin,
-            can_delete: this.state.user_can_delete,
+            hash: sha512(this.state.user_password),
+            admin: this.state.user_admin === 'on' ? true : false,
+            can_delete: this.state.user_can_delete === 'on' ? true : false,
             userfilter: this.state.user_userfilter,
         };
-
-        console.log('adding user');
 
         this.props.dao_auth.userSet(
             user,
             (resp) => {
-                console.log('got success');
                 this.setState({
                     success: true,
                     alert: null,
@@ -529,43 +553,43 @@ class MDACSAuthAddUser extends React.Component {
                 alertstuff = null;
             } else {
                 alertstuff = <div>
-                    <Alert bsStyle="warning" onDismiss={this.onDismissAlert}>
+                    <Alert id="adduser_alert_problem_adding" bsStyle="warning" onDismiss={this.onDismissAlert}>
                         <strong>Opps..</strong> there was a problem adding the user. The server rejected the command.
                     </Alert>
                 </div>;
             }
 
-            return (<span>
-                <Button onClick={this.onContract}>Cancel</Button>
+            return (<span id="adduser_container">
+                <Button id="adduser_contract_button" onClick={this.onContract}>Cancel</Button>
                 <form onSubmit={this.onAddUser}>
                     <FormGroup>
                         <ControlLabel>Real Name</ControlLabel>
-                        <FormControl type="text" value={this.state.user_name} placeholder="Real name." onChange={e => this.onInputChange('name', e)} />
+                        <FormControl id="adduser_realname" type="text" value={this.state.user_name} placeholder="Real name." onChange={e => this.onInputChange('name', e)} />
                         <ControlLabel>Username</ControlLabel>
-                        <FormControl type="text" value={this.state.user_user} placeholder="The username used to login." onChange={e => this.onInputChange('user', e)} />
+                        <FormControl id="adduser_username" type="text" value={this.state.user_user} placeholder="The username used to login." onChange={e => this.onInputChange('user', e)} />
                         <ControlLabel>Password</ControlLabel>
-                        <FormControl type="text" value={this.state.user_password} placeholder="Only set to new password if changing the password." onChange={e => this.onInputChange('password', e)} />
+                        <FormControl id="adduser_password" type="text" value={this.state.user_password} placeholder="Only set to new password if changing the password." onChange={e => this.onInputChange('password', e)} />
                         <ControlLabel>Contact Phone</ControlLabel>
-                        <FormControl type="text" value={this.state.user_phone ? this.state.user_phone : ''} placeholder="Phone." onChange={e => this.onInputChange('phone', e)} />
+                        <FormControl id="adduser_phone" type="text" value={this.state.user_phone ? this.state.user_phone : ''} placeholder="Phone." onChange={e => this.onInputChange('phone', e)} />
                         <ControlLabel>Contact E-Mail</ControlLabel>
-                        <FormControl type="text" value={this.state.user_email ? this.state.user_email : ''} placeholder="E-Mail." onChange={e => this.onInputChange('email', e)} />
+                        <FormControl id="adduser_email" type="text" value={this.state.user_email ? this.state.user_email : ''} placeholder="E-Mail." onChange={e => this.onInputChange('email', e)} />
                         <ControlLabel>User Filter Expression</ControlLabel>
-                        <FormControl type="text" value={this.state.user_userfilter ? this.state.user_userfilter : ''} placeholder="Filter expression." onChange={e => this.onInputChange('userfilter', e)} />
-                        <Checkbox defaultChecked={this.state.user_admin} onChange={e => this.onInputChange('admin', e)}>Administrator</Checkbox>
-                        <Checkbox defaultChecked={this.state.user_can_delete} onChange={e => this.onInputChange('can_delete', e)}>Can Delete</Checkbox>
+                        <FormControl id="adduser_userfilter" type="text" value={this.state.user_userfilter ? this.state.user_userfilter : ''} placeholder="Filter expression." onChange={e => this.onInputChange('userfilter', e)} />
+                        <Checkbox id="adduser_admin" defaultChecked={this.state.user_admin} onChange={e => this.onInputChange('admin', e)}>Administrator</Checkbox>
+                        <Checkbox id="adduser_can_delete" defaultChecked={this.state.user_can_delete} onChange={e => this.onInputChange('can_delete', e)}>Can Delete</Checkbox>
                         {alertstuff}
-                        <Button type="submit">Save New User</Button>;
+                        <Button id="adduser_submit_button" type="submit">Save New User</Button>;
                     </FormGroup>
                 </form>
             </span>);
         } else {
             if (this.state.success === true) {
                 return <span>
-                    <Alert bsStyle="success">The user was added.</Alert>
-                    <Button onClick={this.onExpand}>Add User</Button>
+                    <Alert id="adduser_alert_success" bsStyle="success">The user was added.</Alert>
+                    <Button id="adduser_expand_button" onClick={this.onExpand}>Add User</Button>
                 </span>;
             } else {
-                return <span><Button onClick={this.onExpand}>Add User</Button></span>;
+                return <span><Button id="adduser_expand_button" onClick={this.onExpand}>Add User</Button></span>;
             }
         }
     }
@@ -603,14 +627,12 @@ class MDACSAuthAppBody extends React.Component {
                     userlist: resp,
                     lasterror: null
                 });
-                console.log('user list', resp);
             },
             (res) => {
                 this.setState({
                     userlist: null,
                     lasterror: res
                 });
-                console.log('user list failure', res);
             }
         );
     }
@@ -647,6 +669,7 @@ class MDACSAuthAppBody extends React.Component {
                         dao_auth={this.props.dao_auth}
                         current_admin={this.props.user_isadmin}
                         current_user={this.props.user_username}
+                        this_username={user.user}
                         user={user} />
                 </Tab>
             );
@@ -682,13 +705,13 @@ class MDACSAuthAppBody extends React.Component {
                                 You {expstuff}.
                             </ListGroupItem>
                         </ListGroup>
-                        <Button onClick={this.onLogout}>Logout</Button>
+                        <Button id="logout_button" onClick={this.onLogout}>Logout</Button>
                 </Panel.Body>
             </Panel>
             <Panel>
                 <Panel.Heading>Existing Users</Panel.Heading>
                 <Panel.Body>
-                        <Tabs defaultActiveKey={1} id="User Settings Tabs">
+                        <Tabs defaultActiveKey={1} id="user_settings_tabs">
                             {tabs != null ? tabs : ''}
                         </Tabs>
                 </Panel.Body>
@@ -718,6 +741,7 @@ class MDACSAuthApp extends React.Component {
         this.state = {
             need_login_shown: true,
             dao_auth: new AuthNetworkDAO('.'),
+            alert: null,
         };
     }
 
@@ -737,21 +761,34 @@ class MDACSAuthApp extends React.Component {
         this.state.dao_auth.setCredentials(username, password);
         this.state.dao_auth.isLoginValid(
             (user) => {
-                console.log('user', user);
                 this.setState({
                     need_login_shown: false,
                     user: user,
+                    alert: null,
                 });
             },
             (res) => {
-                alert('invalid login');
+                this.setState({
+                    alert: 'The login failed. Reason given was ' + res + '.',
+                });
             },
         );
     }
 
     render() {
         if (this.state.need_login_shown) {
-            return <div className="MDACSAuthAppContainer"><MDACSLogin onCheckLogin={this.onCheckLogin} /></div>;
+            if (this.state.alert !== null) {
+                return <div className="MDACSAuthAppContainer">
+                    <Alert id="login_alert_problem" bsStyle="warning">
+                        {this.state.alert}
+                    </Alert>
+                    <MDACSLogin onCheckLogin={this.onCheckLogin} />
+                </div>;
+            } else {
+                return <div className="MDACSAuthAppContainer">
+                    <MDACSLogin onCheckLogin={this.onCheckLogin} />
+                </div>;
+            }
         } else {
             return <div className="MDACSAuthAppContainer">
                 <MDACSAuthAppBody

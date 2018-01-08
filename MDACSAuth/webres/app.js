@@ -27,7 +27,7 @@ class AuthNetworkDAO {
         });
     }
 
-    userDelete(username) {
+    userDelete(username, success, failure) {
         this.dao.authenticatedTransaction('/user-delete', {
             username: username
         }, resp => {
@@ -121,37 +121,6 @@ class BasicNetworkDAO {
     }
 }
 
-class MDACSButton extends React.Component {}
-
-class MDACSInput extends React.Component {}
-
-class MDACSLineInput extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.render = this.render.bind(this);
-        this.onChange = this.onChange.bind(this);
-        this.state = {
-            value: props.value
-        };
-    }
-
-    onChange(event) {
-        this.props.onChange(event.target.value);
-        this.setState({ value: event.target.value });
-    }
-
-    render() {
-        return React.createElement(
-            'label',
-            null,
-            this.props.label,
-            ':',
-            React.createElement('input', { type: 'text', value: this.state.value, onChange: this.onChange })
-        );
-    }
-}
-
 /// <summary>
 /// Provides a login UI with callback support to a DAO object to keep
 /// the username and password field of the DAO synchronized. Also, provides
@@ -209,6 +178,7 @@ class MDACSLogin extends React.Component {
                         'Username'
                     ),
                     React.createElement(FormControl, {
+                        id: 'login_username',
                         type: 'text',
                         value: this.state.username,
                         placeholder: 'Enter username',
@@ -220,6 +190,7 @@ class MDACSLogin extends React.Component {
                         'Password'
                     ),
                     React.createElement(FormControl, {
+                        id: 'login_password',
                         type: 'text',
                         value: this.state.password,
                         placeholder: 'Enter password',
@@ -228,7 +199,7 @@ class MDACSLogin extends React.Component {
                     React.createElement(FormControl.Feedback, null),
                     React.createElement(
                         Button,
-                        { type: 'submit' },
+                        { id: 'login_submit', type: 'submit' },
                         'Login'
                     )
                 )
@@ -261,6 +232,7 @@ class MDACSUserSettings extends React.Component {
         this.onIsAdminChange = this.onIsAdminChange.bind(this);
         this.onCanDeleteChange = this.onCanDeleteChange.bind(this);
         this.onDeleteUser = this.onDeleteUser.bind(this);
+        this.onUpdateUser = this.onUpdateUser.bind(this);
 
         this.state = {
             user_password: '',
@@ -269,8 +241,9 @@ class MDACSUserSettings extends React.Component {
             user_phone: props.user.phone,
             user_email: props.user.email,
             user_admin: props.user.admin,
-            user_can_delete: props.user.can_detel,
-            user_userfilter: props.user.userfilter
+            user_can_delete: props.user.can_delete,
+            user_userfilter: props.user.userfilter,
+            success: false
         };
     }
 
@@ -326,6 +299,35 @@ class MDACSUserSettings extends React.Component {
         }
     }
 
+    onUpdateUser(e) {
+        e.preventDefault();
+        let user = {
+            user: this.state.user_user,
+            name: this.state.user_name,
+            phone: this.state.user_phone,
+            email: this.state.user_email,
+            hash: sha512(this.state.user_password),
+            admin: this.state.user_admin === 'on' ? true : false,
+            can_delete: this.state.user_can_delete === 'on' ? true : false,
+            userfilter: this.state.user_userfilter
+        };
+
+        console.log('updating user');
+
+        this.props.dao_auth.userSet(user, resp => {
+            this.setState({
+                success: true
+            });
+
+            if (this.props.onAddedUser) this.props.onAddedUser();
+        }, res => {
+            this.setState({
+                success: false,
+                alert: 'The update user command failed to execute on the server.'
+            });
+        });
+    }
+
     render() {
         let disabledForm;
 
@@ -336,31 +338,80 @@ class MDACSUserSettings extends React.Component {
         }
 
         let b;
+        let d;
 
         if (disabledForm) {
             b = React.createElement(
-                'span',
+                'div',
                 null,
-                'No changes can be saved. You are not an ',
                 React.createElement(
-                    'code',
+                    'div',
                     null,
-                    'administrator'
+                    'No changes can be saved.'
                 ),
-                ' nor is this ',
                 React.createElement(
-                    'code',
+                    'div',
                     null,
-                    'you'
-                ),
-                '.'
+                    'You are not an ',
+                    React.createElement(
+                        'code',
+                        null,
+                        'administrator'
+                    ),
+                    ' nor is this ',
+                    React.createElement(
+                        'code',
+                        null,
+                        'you'
+                    ),
+                    '.'
+                )
             );
+            d = null;
         } else {
-            b = React.createElement(
-                Button,
-                { type: 'submit' },
-                'Save Changes'
-            );
+            if (this.state.success) {
+                b = React.createElement(
+                    'div',
+                    null,
+                    React.createElement(
+                        Alert,
+                        { bsStyle: 'success' },
+                        'The update was successful.'
+                    ),
+                    React.createElement(
+                        Button,
+                        { id: 'user_settings_save_changes_button', type: 'submit' },
+                        'Save Changes'
+                    )
+                );
+            } else {
+                if (this.state.alert !== null) {
+                    b = React.createElement(
+                        'div',
+                        null,
+                        React.createElement(
+                            Alert,
+                            { bsStyle: 'warning' },
+                            this.state.alert
+                        ),
+                        React.createElement(
+                            Button,
+                            { id: 'user_settings_save_changes_button', type: 'submit' },
+                            'Save Changes'
+                        )
+                    );
+                } else {
+                    b = React.createElement(
+                        'div',
+                        null,
+                        React.createElement(
+                            Button,
+                            { id: 'user_settings_save_changes_button', type: 'submit' },
+                            'Save Changes'
+                        )
+                    );
+                }
+            }
         }
 
         let c;
@@ -374,15 +425,15 @@ class MDACSUserSettings extends React.Component {
                     null,
                     'User Filter Expression'
                 ),
-                React.createElement(FormControl, { type: 'text', value: this.state.user_userfilter ? this.state.user_userfilter : '', placeholder: 'Filter expression.', onChange: this.onUserFilterChange }),
+                React.createElement(FormControl, { id: 'user_settings_userfilter', type: 'text', value: this.state.user_userfilter ? this.state.user_userfilter : '', placeholder: 'Filter expression.', onChange: this.onUserFilterChange }),
                 React.createElement(
                     Checkbox,
-                    { defaultChecked: this.state.user_admin, onChange: this.onIsAdminChange },
+                    { id: 'user_settings_admin', defaultChecked: this.state.user_admin, onChange: this.onIsAdminChange },
                     'Administrator'
                 ),
                 React.createElement(
                     Checkbox,
-                    { defaultChecked: this.state.user_can_delete, onChange: this.onCanDeleteChange },
+                    { id: 'user_settings_can_delete', defaultChecked: this.state.user_can_delete, onChange: this.onCanDeleteChange },
                     'Can Delete'
                 ),
                 React.createElement(
@@ -390,7 +441,7 @@ class MDACSUserSettings extends React.Component {
                     null,
                     React.createElement(
                         Button,
-                        { onClick: this.onDeleteUser },
+                        { id: 'user_settings_delete_user_button', onClick: this.onDeleteUser },
                         'Delete User'
                     )
                 )
@@ -411,7 +462,8 @@ class MDACSUserSettings extends React.Component {
 
         let a = React.createElement(
             'form',
-            null,
+            { id: 'user_settings_form', onSubmit: this.onUpdateUser },
+            React.createElement('div', { style: { display: 'hidden' }, id: 'user_settings_username', 'data-test': this.props.this_username }),
             React.createElement(
                 FormGroup,
                 { disabled: disabledForm },
@@ -420,25 +472,25 @@ class MDACSUserSettings extends React.Component {
                     null,
                     'Real Name'
                 ),
-                React.createElement(FormControl, { type: 'text', value: this.state.user_name, placeholder: 'Real name.', onChange: this.onRealNameChange }),
+                React.createElement(FormControl, { id: 'user_settings_realname', type: 'text', value: this.state.user_name, placeholder: 'Real name.', onChange: this.onRealNameChange }),
                 React.createElement(
                     ControlLabel,
                     null,
                     'Password'
                 ),
-                React.createElement(FormControl, { type: 'text', value: this.state.user_password, placeholder: 'Only set to new password if changing the password.', onChange: this.onPasswordChange }),
+                React.createElement(FormControl, { id: 'user_settings_password', type: 'text', value: this.state.user_password, placeholder: 'Only set to new password if changing the password.', onChange: this.onPasswordChange }),
                 React.createElement(
                     ControlLabel,
                     null,
                     'Contact Phone'
                 ),
-                React.createElement(FormControl, { type: 'text', value: this.state.user_phone ? this.state.user_phone : '', placeholder: 'Phone.', onChange: this.onPhoneChange }),
+                React.createElement(FormControl, { id: 'user_settings_phone', type: 'text', value: this.state.user_phone ? this.state.user_phone : '', placeholder: 'Phone.', onChange: this.onPhoneChange }),
                 React.createElement(
                     ControlLabel,
                     null,
                     'Contact E-Mail'
                 ),
-                React.createElement(FormControl, { type: 'text', value: this.state.user_email ? this.state.user_email : '', placeholder: 'E-Mail.', onChange: this.onEMailChange }),
+                React.createElement(FormControl, { id: 'user_settings_email', type: 'text', value: this.state.user_email ? this.state.user_email : '', placeholder: 'E-Mail.', onChange: this.onEMailChange }),
                 c,
                 React.createElement(
                     'div',
@@ -480,7 +532,6 @@ class MDACSAuthAddUser extends React.Component {
     }
 
     onExpand() {
-        console.log('expanding');
         this.setState({
             expanded: true,
             success: false,
@@ -501,8 +552,6 @@ class MDACSAuthAddUser extends React.Component {
 
         tmp['user_' + id] = e.target.value;
 
-        console.log('@@@', 'user_' + id, e.target.value);
-
         this.setState(tmp);
     }
 
@@ -514,15 +563,13 @@ class MDACSAuthAddUser extends React.Component {
             name: this.state.user_name,
             phone: this.state.user_phone,
             email: this.state.user_email,
-            admin: this.state.user_admin,
-            can_delete: this.state.user_can_delete,
+            hash: sha512(this.state.user_password),
+            admin: this.state.user_admin === 'on' ? true : false,
+            can_delete: this.state.user_can_delete === 'on' ? true : false,
             userfilter: this.state.user_userfilter
         };
 
-        console.log('adding user');
-
         this.props.dao_auth.userSet(user, resp => {
-            console.log('got success');
             this.setState({
                 success: true,
                 alert: null,
@@ -555,7 +602,7 @@ class MDACSAuthAddUser extends React.Component {
                     null,
                     React.createElement(
                         Alert,
-                        { bsStyle: 'warning', onDismiss: this.onDismissAlert },
+                        { id: 'adduser_alert_problem_adding', bsStyle: 'warning', onDismiss: this.onDismissAlert },
                         React.createElement(
                             'strong',
                             null,
@@ -568,10 +615,10 @@ class MDACSAuthAddUser extends React.Component {
 
             return React.createElement(
                 'span',
-                null,
+                { id: 'adduser_container' },
                 React.createElement(
                     Button,
-                    { onClick: this.onContract },
+                    { id: 'adduser_contract_button', onClick: this.onContract },
                     'Cancel'
                 ),
                 React.createElement(
@@ -585,51 +632,51 @@ class MDACSAuthAddUser extends React.Component {
                             null,
                             'Real Name'
                         ),
-                        React.createElement(FormControl, { type: 'text', value: this.state.user_name, placeholder: 'Real name.', onChange: e => this.onInputChange('name', e) }),
+                        React.createElement(FormControl, { id: 'adduser_realname', type: 'text', value: this.state.user_name, placeholder: 'Real name.', onChange: e => this.onInputChange('name', e) }),
                         React.createElement(
                             ControlLabel,
                             null,
                             'Username'
                         ),
-                        React.createElement(FormControl, { type: 'text', value: this.state.user_user, placeholder: 'The username used to login.', onChange: e => this.onInputChange('user', e) }),
+                        React.createElement(FormControl, { id: 'adduser_username', type: 'text', value: this.state.user_user, placeholder: 'The username used to login.', onChange: e => this.onInputChange('user', e) }),
                         React.createElement(
                             ControlLabel,
                             null,
                             'Password'
                         ),
-                        React.createElement(FormControl, { type: 'text', value: this.state.user_password, placeholder: 'Only set to new password if changing the password.', onChange: e => this.onInputChange('password', e) }),
+                        React.createElement(FormControl, { id: 'adduser_password', type: 'text', value: this.state.user_password, placeholder: 'Only set to new password if changing the password.', onChange: e => this.onInputChange('password', e) }),
                         React.createElement(
                             ControlLabel,
                             null,
                             'Contact Phone'
                         ),
-                        React.createElement(FormControl, { type: 'text', value: this.state.user_phone ? this.state.user_phone : '', placeholder: 'Phone.', onChange: e => this.onInputChange('phone', e) }),
+                        React.createElement(FormControl, { id: 'adduser_phone', type: 'text', value: this.state.user_phone ? this.state.user_phone : '', placeholder: 'Phone.', onChange: e => this.onInputChange('phone', e) }),
                         React.createElement(
                             ControlLabel,
                             null,
                             'Contact E-Mail'
                         ),
-                        React.createElement(FormControl, { type: 'text', value: this.state.user_email ? this.state.user_email : '', placeholder: 'E-Mail.', onChange: e => this.onInputChange('email', e) }),
+                        React.createElement(FormControl, { id: 'adduser_email', type: 'text', value: this.state.user_email ? this.state.user_email : '', placeholder: 'E-Mail.', onChange: e => this.onInputChange('email', e) }),
                         React.createElement(
                             ControlLabel,
                             null,
                             'User Filter Expression'
                         ),
-                        React.createElement(FormControl, { type: 'text', value: this.state.user_userfilter ? this.state.user_userfilter : '', placeholder: 'Filter expression.', onChange: e => this.onInputChange('userfilter', e) }),
+                        React.createElement(FormControl, { id: 'adduser_userfilter', type: 'text', value: this.state.user_userfilter ? this.state.user_userfilter : '', placeholder: 'Filter expression.', onChange: e => this.onInputChange('userfilter', e) }),
                         React.createElement(
                             Checkbox,
-                            { defaultChecked: this.state.user_admin, onChange: e => this.onInputChange('admin', e) },
+                            { id: 'adduser_admin', defaultChecked: this.state.user_admin, onChange: e => this.onInputChange('admin', e) },
                             'Administrator'
                         ),
                         React.createElement(
                             Checkbox,
-                            { defaultChecked: this.state.user_can_delete, onChange: e => this.onInputChange('can_delete', e) },
+                            { id: 'adduser_can_delete', defaultChecked: this.state.user_can_delete, onChange: e => this.onInputChange('can_delete', e) },
                             'Can Delete'
                         ),
                         alertstuff,
                         React.createElement(
                             Button,
-                            { type: 'submit' },
+                            { id: 'adduser_submit_button', type: 'submit' },
                             'Save New User'
                         ),
                         ';'
@@ -643,12 +690,12 @@ class MDACSAuthAddUser extends React.Component {
                     null,
                     React.createElement(
                         Alert,
-                        { bsStyle: 'success' },
+                        { id: 'adduser_alert_success', bsStyle: 'success' },
                         'The user was added.'
                     ),
                     React.createElement(
                         Button,
-                        { onClick: this.onExpand },
+                        { id: 'adduser_expand_button', onClick: this.onExpand },
                         'Add User'
                     )
                 );
@@ -658,7 +705,7 @@ class MDACSAuthAddUser extends React.Component {
                     null,
                     React.createElement(
                         Button,
-                        { onClick: this.onExpand },
+                        { id: 'adduser_expand_button', onClick: this.onExpand },
                         'Add User'
                     )
                 );
@@ -698,13 +745,11 @@ class MDACSAuthAppBody extends React.Component {
                 userlist: resp,
                 lasterror: null
             });
-            console.log('user list', resp);
         }, res => {
             this.setState({
                 userlist: null,
                 lasterror: res
             });
-            console.log('user list failure', res);
         });
     }
 
@@ -739,6 +784,7 @@ class MDACSAuthAppBody extends React.Component {
                     dao_auth: this.props.dao_auth,
                     current_admin: this.props.user_isadmin,
                     current_user: this.props.user_username,
+                    this_username: user.user,
                     user: user })
             ));
         }
@@ -826,7 +872,7 @@ class MDACSAuthAppBody extends React.Component {
                     ),
                     React.createElement(
                         Button,
-                        { onClick: this.onLogout },
+                        { id: 'logout_button', onClick: this.onLogout },
                         'Logout'
                     )
                 )
@@ -844,7 +890,7 @@ class MDACSAuthAppBody extends React.Component {
                     null,
                     React.createElement(
                         Tabs,
-                        { defaultActiveKey: 1, id: 'User Settings Tabs' },
+                        { defaultActiveKey: 1, id: 'user_settings_tabs' },
                         tabs != null ? tabs : ''
                     )
                 )
@@ -879,7 +925,8 @@ class MDACSAuthApp extends React.Component {
 
         this.state = {
             need_login_shown: true,
-            dao_auth: new AuthNetworkDAO('.')
+            dao_auth: new AuthNetworkDAO('.'),
+            alert: null
         };
     }
 
@@ -896,23 +943,38 @@ class MDACSAuthApp extends React.Component {
     onCheckLogin(username, password) {
         this.state.dao_auth.setCredentials(username, password);
         this.state.dao_auth.isLoginValid(user => {
-            console.log('user', user);
             this.setState({
                 need_login_shown: false,
-                user: user
+                user: user,
+                alert: null
             });
         }, res => {
-            alert('invalid login');
+            this.setState({
+                alert: 'The login failed. Reason given was ' + res + '.'
+            });
         });
     }
 
     render() {
         if (this.state.need_login_shown) {
-            return React.createElement(
-                'div',
-                { className: 'MDACSAuthAppContainer' },
-                React.createElement(MDACSLogin, { onCheckLogin: this.onCheckLogin })
-            );
+            if (this.state.alert !== null) {
+                return React.createElement(
+                    'div',
+                    { className: 'MDACSAuthAppContainer' },
+                    React.createElement(
+                        Alert,
+                        { id: 'login_alert_problem', bsStyle: 'warning' },
+                        this.state.alert
+                    ),
+                    React.createElement(MDACSLogin, { onCheckLogin: this.onCheckLogin })
+                );
+            } else {
+                return React.createElement(
+                    'div',
+                    { className: 'MDACSAuthAppContainer' },
+                    React.createElement(MDACSLogin, { onCheckLogin: this.onCheckLogin })
+                );
+            }
         } else {
             return React.createElement(
                 'div',

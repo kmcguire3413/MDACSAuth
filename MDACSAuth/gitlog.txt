@@ -1,3 +1,9 @@
+* commit e72f5fbf6be0cd49487f698350221950bf780353
+| Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
+| Date:   Sun Jan 7 04:21:49 2018 -0600
+| 
+|     Finish implementation to add and delete users. Added both UI and service code. Still need to test the code to ensure that it works.
+| 
 * commit c18d52eb8fb52ad30d444b8b3b308ac898df37d2
 | Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
 | Date:   Sun Jan 7 00:09:10 2018 -0600
