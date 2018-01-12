@@ -727,15 +727,6 @@ namespace MDACSAuth
     {
         public static void Main(string[] args)
         {
-#if DEBUG
-            var cfg = new ProgramConfig()
-            {
-                ssl_cert_path = null,
-                ssl_cert_pass = null,
-                data_base_path = ".",
-                port = 34002
-            };
-#else
             if (!File.Exists(args[0]))
             {
                 var defcfg = new ProgramConfig()
@@ -754,7 +745,7 @@ namespace MDACSAuth
             Logger.WriteDebugString($"Reading configuration file, {args[0]}.");
 
             var cfg = JsonConvert.DeserializeObject<ProgramConfig>(File.ReadAllText(args[0]));
-#endif
+
             var handlers = new Dictionary<string, SimpleServer<ServerState>.SimpleHTTPHandler>();
 
             handlers.Add("/utility", Handlers.Utility);
@@ -780,6 +771,8 @@ namespace MDACSAuth
                 cfg.ssl_cert_path,
                 cfg.ssl_cert_pass
             );
+
+            server.Wait();
         }
     }
 }

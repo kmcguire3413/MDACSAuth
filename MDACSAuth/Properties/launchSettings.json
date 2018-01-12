@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MDACSAuth": {
+      "commandName": "Project",
+      "commandLineArgs": "authconfig.json"
+    }
+  }
+}
