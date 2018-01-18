@@ -1,3 +1,9 @@
+* commit 06caad79f10f30db96e0a491aa86f3aeeb89677d
+| Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
+| Date:   Fri Jan 12 04:29:14 2018 -0600
+| 
+|     Major refactoring of React mixed MVC into a separated MVC. Also, considering... should I have just used Angular?
+| 
 * commit 06e78af3596e8234aebb4ba0328e51ab1515eb46
 | Author: Leonard Kevin McGuire Jr <kmcg3413@gmail.com>
 | Date:   Mon Jan 8 06:43:31 2018 -0600

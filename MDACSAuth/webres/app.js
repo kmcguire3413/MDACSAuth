@@ -1,16 +1,313 @@
-const request = window.superagent;
-const FormGroup = ReactBootstrap.Alert;
-const ControlLabel = ReactBootstrap.ControlLabel;
-const FormControl = ReactBootstrap.FormControl;
-const Button = ReactBootstrap.Button;
-const Panel = ReactBootstrap.Panel;
-const Tabs = ReactBootstrap.Tabs;
-const Tab = ReactBootstrap.Tab;
-const Label = ReactBootstrap.Label;
-const ListGroup = ReactBootstrap.ListGroup;
-const ListGroupItem = ReactBootstrap.ListGroupItem;
-const Checkbox = ReactBootstrap.Checkbox;
-const Alert = ReactBootstrap.Alert;
+/// <pure/>
+const MDACSUserSettingsInitialState = props => {
+    return {
+        user_password: '',
+        user_user: props.user.user,
+        user_name: props.user.name,
+        user_phone: props.user.phone,
+        user_email: props.user.email,
+        user_admin: props.user.admin,
+        user_can_delete: props.user.can_delete,
+        user_userfilter: props.user.userfilter,
+        success: false,
+        delete_success: false,
+        alert: null
+    };
+};
+
+/// <pure/>
+const MDACSUserSettingsMutators = {
+    permCheck: (props, state, cb) => props.current_admin || prop.current_user == state.user_user ? cb() : false,
+    utility: (props, state, setState, k, e) => {
+        MDACSUserSettingsMutators.permCheck(props, state, () => {
+            let tmp = {};
+            tmp[k] = e.target.value;
+            setState(tmp);
+        });
+    },
+    onRealNameChange: (e, props, state, setState) => MDACSUserSettingsMutators.utility(props, state, setState, 'user_name', e),
+    onPasswordChange: (e, props, state, setState) => MDACSUserSettingsMutators.utility(props, state, setState, 'user_password', e),
+    onPhoneChange: (e, props, state, setState) => MDACSUserSettingsMutators.utility(props, state, setState, 'user_phone', e),
+    onEMailChange: (e, props, state, setState) => MDACSUserSettingsMutators.utility(props, state, setState, 'user_email', e),
+    onUserFilterChange: (e, props, state, setState) => MDACSUserSettingsMutators.utility(props, state, setState, 'user_userfilter', e),
+    onIsAdminChange: (e, props, state, setState) => MDACSUserSettingsMutators.utility(props, state, setState, 'user_admin', e),
+    onCanDeleteChange: (e, props, state, setState) => MDACSUserSettingsMutators.utility(props, state, setState, 'user_can_delete', e),
+    onDeleteUser: (props, state, setState) => props.current_admin ? props.dao_auth.userDelete(state.user_user, resp => {
+        if (props.onUserDelete) props.onUserDelete();
+
+        setState({
+            success: true,
+            alert: null,
+            delete_success: true
+        });
+    }, res => {
+        setState({ success: false, alert: 'The server failed to delete the user.' });
+    }) : setState({ success: false, alert: 'You do not have the delete user priviledge.' }),
+    onUpdateUser: (e, props, state, setState) => {
+        e.preventDefault();
+
+        let user = {
+            user: state.user_user,
+            name: state.user_name,
+            phone: state.user_phone,
+            email: state.user_email,
+            hash: sha512(state.user_password),
+            admin: state.user_admin === 'on' ? true : false,
+            can_delete: state.user_can_delete === 'on' ? true : false,
+            userfilter: state.user_userfilter
+        };
+
+        console.log('updating user');
+
+        props.dao_auth.userSet(user, resp => {
+            setState({
+                success: true
+            });
+
+            if (props.onAddedUser) props.onAddedUser();
+        }, res => {
+            setState({
+                success: false,
+                alert: 'The update user command failed to execute on the server.'
+            });
+        });
+    }
+};
+
+/// <pure/>
+const MDACSUserSettingsBottomView = (props, state, setState, mutators) => {
+    let formDisabled = !props.current_admin && props.current_user != state.user_user;
+
+    if (formDisabled) {
+        bottom = React.createElement(
+            'div',
+            null,
+            React.createElement(
+                'div',
+                null,
+                'No changes can be saved.'
+            ),
+            React.createElement(
+                'div',
+                null,
+                'You are not an ',
+                React.createElement(
+                    'code',
+                    null,
+                    'administrator'
+                ),
+                ' nor is this ',
+                React.createElement(
+                    'code',
+                    null,
+                    'you'
+                ),
+                '.'
+            )
+        );
+    } else {
+        if (state.success) {
+            bottom = React.createElement(
+                'div',
+                null,
+                React.createElement(
+                    Alert,
+                    { bsStyle: 'success' },
+                    'The update was successful.'
+                ),
+                React.createElement(
+                    Button,
+                    { id: 'user_settings_save_changes_button', type: 'submit' },
+                    'Save Changes'
+                )
+            );
+        } else {
+            if (state.alert) {
+                bottom = React.createElement(
+                    'div',
+                    null,
+                    React.createElement(
+                        Alert,
+                        { bsStyle: 'warning' },
+                        state.alert
+                    ),
+                    React.createElement(
+                        Button,
+                        { id: 'user_settings_save_changes_button', type: 'submit' },
+                        'Save Changes'
+                    )
+                );
+            } else {
+                bottom = React.createElement(
+                    'div',
+                    null,
+                    React.createElement(
+                        Button,
+                        { id: 'user_settings_save_changes_button', type: 'submit' },
+                        'Save Changes'
+                    )
+                );
+            }
+        }
+    }
+};
+
+/// <pure/>
+const MDACSUserSettingsViewCenter = (props, state, setState, mutators) => {
+    return props.current_admin ? React.createElement(
+        'div',
+        null,
+        React.createElement(
+            ControlLabel,
+            null,
+            'User Filter Expression'
+        ),
+        React.createElement(FormControl, {
+            id: 'user_settings_userfilter',
+            type: 'text',
+            value: state.user_userfilter ? state.user_userfilter : '',
+            placeholder: 'Filter expression.',
+            onChange: e => mutators.onUserFilterChange(e, props, state, setState) }),
+        React.createElement(
+            Checkbox,
+            {
+                id: 'user_settings_admin',
+                defaultChecked: state.user_admin,
+                onChange: e => mutators.onIsAdminChange(e, props, state, setState) },
+            'Administrator'
+        ),
+        React.createElement(
+            Checkbox,
+            {
+                id: 'user_settings_can_delete',
+                defaultChecked: state.user_can_delete,
+                onChange: e => mutators.onCanDeleteChange(e, props, state, setState) },
+            'Can Delete'
+        ),
+        React.createElement(
+            'div',
+            null,
+            React.createElement(
+                Button,
+                {
+                    id: 'user_settings_delete_user_button',
+                    onClick: e => mutators.onDeleteUser(props, state, setState) },
+                'Delete User'
+            )
+        )
+    ) : React.createElement(
+        'div',
+        null,
+        'Some settings have been disabled and hidden because you are not an ',
+        React.createElement(
+            'code',
+            null,
+            'administrator'
+        ),
+        '.'
+    );
+};
+
+/// <pure/>
+const MDACSUserSettingsView = (props, state, setState, mutators) => {
+    if (state.delete_success) {
+        return React.createElement(
+            'div',
+            null,
+            React.createElement(
+                Alert,
+                { bsStyle: 'success' },
+                'The user has been deleted.'
+            )
+        );
+    }
+
+    let bottom = MDACSUserSettingsBottomView(props, state, setState, mutators);
+
+    let center = MDACSUserSettingsViewCenter(props, state, setState, mutators);
+
+    let top = React.createElement(
+        'form',
+        { id: 'user_settings_form', onSubmit: e => mutators.onUpdateUser(e, props, state, setState) },
+        React.createElement('div', {
+            style: { display: 'hidden' },
+            id: 'user_settings_username',
+            'data-test': props.this_username }),
+        React.createElement(
+            FormGroup,
+            null,
+            React.createElement(
+                ControlLabel,
+                null,
+                'Real Name'
+            ),
+            React.createElement(FormControl, {
+                id: 'user_settings_realname',
+                type: 'text',
+                value: state.user_name,
+                placeholder: 'Real name.',
+                onChange: e => mutators.onRealNameChange(e, props, state, setState) }),
+            React.createElement(
+                ControlLabel,
+                null,
+                'Password'
+            ),
+            React.createElement(FormControl, {
+                id: 'user_settings_password',
+                type: 'text',
+                value: state.user_password,
+                placeholder: 'Only set to new password if changing the password.',
+                onChange: e => mutators.onPasswordChange(e, props, state, setState) }),
+            React.createElement(
+                ControlLabel,
+                null,
+                'Contact Phone'
+            ),
+            React.createElement(FormControl, {
+                id: 'user_settings_phone',
+                type: 'text',
+                value: state.user_phone ? state.user_phone : '',
+                placeholder: 'Phone.',
+                onChange: e => mutators.onPhoneChange(e, props, state, setState) }),
+            React.createElement(
+                ControlLabel,
+                null,
+                'Contact E-Mail'
+            ),
+            React.createElement(FormControl, {
+                id: 'user_settings_email',
+                type: 'text',
+                value: state.user_email ? state.user_email : '',
+                placeholder: 'E-Mail.',
+                onChange: e => mutators.onEMailChange(e, props, state, setState) }),
+            center,
+            React.createElement(
+                'div',
+                null,
+                bottom
+            ),
+            React.createElement(
+                Button,
+                { type: 'submit', id: 'user_settings_save_changes_button' },
+                'Save'
+            )
+        )
+    );
+
+    return top;
+};
+
+class MDACSUserSettings extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = MDACSUserSettingsInitialState(props);
+    }
+
+    render() {
+        return MDACSUserSettingsView(this.props, this.state, this.setState.bind(this), MDACSUserSettingsMutators);
+    }
+}
 
 class AuthNetworkDAO {
     constructor(url_auth) {
@@ -124,6 +421,7 @@ class BasicNetworkDAO {
 /// <summary>
 /// Initial model
 /// </summary>
+/// <pure/>
 const MDACSLoginInitialState = {
     username: '',
     password: ''
@@ -132,6 +430,7 @@ const MDACSLoginInitialState = {
 /// <summary>
 /// Controller/Mutator
 /// </summary>
+/// <pure/>
 const MDACSLoginMutators = {
     onUserChange: (e, props, state, setState) => setState({ username: e.target.value }),
     onPassChange: (e, props, state, setState) => setState({ password: e.target.value }),
@@ -147,6 +446,7 @@ const MDACSLoginMutators = {
 /// <summary>
 /// View
 /// </summary>
+/// <pure/>
 const MDACSLoginView = (props, state, setState, mutators) => {
     let onUserChange = e => mutators.onUserChange(e, props, state, setState);
     let onPassChange = e => mutators.onPassChange(e, props, state, setState);
@@ -207,309 +507,6 @@ class MDACSLogin extends React.Component {
 
     render() {
         return MDACSLoginView(this.props, this.state, this.setState.bind(this), MDACSLoginMutators);
-    }
-}
-
-const MDACSUserSettingsInitialState = props => {
-    return {
-        user_password: '',
-        user_user: props.user.user,
-        user_name: props.user.name,
-        user_phone: props.user.phone,
-        user_email: props.user.email,
-        user_admin: props.user.admin,
-        user_can_delete: props.user.can_delete,
-        user_userfilter: props.user.userfilter,
-        success: false,
-        delete_success: false,
-        alert: null
-    };
-};
-
-const MDACSUserSettingsMutators = {
-    permCheck: (props, state, cb) => props.current_admin || props.current_user == state.user_user ? cb() : false,
-    utility: (k, e) => {
-        MDACSUserSettingsMutators.permCheck(props, state, () => {
-            let tmp = {};
-            tmp[k] = e.target.value;
-            setState(tmp);
-        });
-    },
-    onRealNameChange: e => MDACSUserSettingsMutators.utility('user_name', e),
-    onPasswordChange: e => MDACSUserSettingsMutators.utility('user_password', e),
-    onPhoneChange: e => MDACSUserSettingsMutators.utility('user_phone', e),
-    onEMailChange: e => MDACSUserSettingsMutators.utility('user_email', e),
-    onUserFilterChange: e => MDACSUserSettingsMutators.utility('user_userfilter', e),
-    onIsAdminChange: e => MDACSUserSettingsMutators.utility('user_admin', e),
-    onCanDeleteChange: e => MDACSUserSettingsMutators.utility('user_can_delete', e),
-    onDeleteUser: (props, state, setState) => props.current_admin ? props.dao_auth.userDelete(state.user_user, resp => {
-        if (props.onUserDelete) props.onUserDelete();
-
-        setState({
-            success: true,
-            alert: null,
-            delete_success: true
-        });
-    }, res => {
-        setState({ success: false, alert: 'The server failed to delete the user.' });
-    }) : setState({ success: false, alert: 'You do not have the delete user priviledge.' }),
-    onUpdateUser: (e, props, state, setState) => {
-        e.preventDefault();
-
-        let user = {
-            user: state.user_user,
-            name: state.user_name,
-            phone: state.user_phone,
-            email: state.user_email,
-            hash: sha512(state.user_password),
-            admin: state.user_admin === 'on' ? true : false,
-            can_delete: state.user_can_delete === 'on' ? true : false,
-            userfilter: state.user_userfilter
-        };
-
-        props.dao_auth.userSet(user, resp => {
-            setState({
-                success: true
-            });
-
-            if (props.onAddedUser) props.onAddedUser();
-        }, res => {
-            setState({
-                success: false,
-                alert: 'The update user command failed to execute on the server.'
-            });
-        });
-    }
-};
-
-const MDACSUserSettingsBottomView = (props, state, setState, mutators) => {
-    let formDisabled = !props.current_admin && props.current_user != state.user_user;
-
-    if (formDisabled) {
-        bottom = React.createElement(
-            'div',
-            null,
-            React.createElement(
-                'div',
-                null,
-                'No changes can be saved.'
-            ),
-            React.createElement(
-                'div',
-                null,
-                'You are not an ',
-                React.createElement(
-                    'code',
-                    null,
-                    'administrator'
-                ),
-                ' nor is this ',
-                React.createElement(
-                    'code',
-                    null,
-                    'you'
-                ),
-                '.'
-            )
-        );
-    } else {
-        if (state.success) {
-            bottom = React.createElement(
-                'div',
-                null,
-                React.createElement(
-                    Alert,
-                    { bsStyle: 'success' },
-                    'The update was successful.'
-                ),
-                React.createElement(
-                    Button,
-                    { id: 'user_settings_save_changes_button', type: 'submit' },
-                    'Save Changes'
-                )
-            );
-        } else {
-            if (state.alert) {
-                bottom = React.createElement(
-                    'div',
-                    null,
-                    React.createElement(
-                        Alert,
-                        { bsStyle: 'warning' },
-                        state.alert
-                    ),
-                    React.createElement(
-                        Button,
-                        { id: 'user_settings_save_changes_button', type: 'submit' },
-                        'Save Changes'
-                    )
-                );
-            } else {
-                bottom = React.createElement(
-                    'div',
-                    null,
-                    React.createElement(
-                        Button,
-                        { id: 'user_settings_save_changes_button', type: 'submit' },
-                        'Save Changes'
-                    )
-                );
-            }
-        }
-    }
-};
-
-const MDACSUserSettingsViewCenter = (props, state, setState, mutators) => {
-    return props.current_admin ? React.createElement(
-        'div',
-        null,
-        React.createElement(
-            ControlLabel,
-            null,
-            'User Filter Expression'
-        ),
-        React.createElement(FormControl, {
-            id: 'user_settings_userfilter',
-            type: 'text',
-            value: state.user_userfilter ? state.user_userfilter : '',
-            placeholder: 'Filter expression.',
-            onChange: mutators.onUserFilterChange }),
-        React.createElement(
-            Checkbox,
-            {
-                id: 'user_settings_admin',
-                defaultChecked: state.user_admin,
-                onChange: mutators.onIsAdminChange },
-            'Administrator'
-        ),
-        React.createElement(
-            Checkbox,
-            {
-                id: 'user_settings_can_delete',
-                defaultChecked: state.user_can_delete,
-                onChange: mutators.onCanDeleteChange },
-            'Can Delete'
-        ),
-        React.createElement(
-            'div',
-            null,
-            React.createElement(
-                Button,
-                {
-                    id: 'user_settings_delete_user_button',
-                    onClick: e => mutators.onDeleteUser(props, state, setState) },
-                'Delete User'
-            )
-        )
-    ) : React.createElement(
-        'div',
-        null,
-        'Some settings have been disabled and hidden because you are not an ',
-        React.createElement(
-            'code',
-            null,
-            'administrator'
-        ),
-        '.'
-    );
-};
-
-const MDACSUserSettingsView = (props, state, setState, mutators) => {
-    if (state.delete_success) {
-        return React.createElement(
-            'div',
-            null,
-            React.createElement(
-                Alert,
-                { bsStyle: 'success' },
-                'The user has been deleted.'
-            )
-        );
-    }
-
-    let bottom = MDACSUserSettingsBottomView(props, state, setState, mutators);
-
-    let center = MDACSUserSettingsViewCenter(props, state, setState, mutators);
-
-    let top = React.createElement(
-        'form',
-        { id: 'user_settings_form', onSubmit: e => mutators.onUpdateUser(e, props, state, setState) },
-        React.createElement('div', {
-            style: { display: 'hidden' },
-            id: 'user_settings_username',
-            'data-test': props.this_username }),
-        React.createElement(
-            FormGroup,
-            null,
-            React.createElement(
-                ControlLabel,
-                null,
-                'Real Name'
-            ),
-            React.createElement(FormControl, {
-                id: 'user_settings_realname',
-                type: 'text',
-                value: state.user_name,
-                placeholder: 'Real name.',
-                onChange: mutators.onRealNameChange }),
-            React.createElement(
-                ControlLabel,
-                null,
-                'Password'
-            ),
-            React.createElement(FormControl, {
-                id: 'user_settings_password',
-                type: 'text',
-                value: state.user_password,
-                placeholder: 'Only set to new password if changing the password.',
-                onChange: mutators.onPasswordChange }),
-            React.createElement(
-                ControlLabel,
-                null,
-                'Contact Phone'
-            ),
-            React.createElement(FormControl, {
-                id: 'user_settings_phone',
-                type: 'text',
-                value: state.user_phone ? state.user_phone : '',
-                placeholder: 'Phone.', onChange: mutators.onPhoneChange }),
-            React.createElement(
-                ControlLabel,
-                null,
-                'Contact E-Mail'
-            ),
-            React.createElement(FormControl, {
-                id: 'user_settings_email',
-                type: 'text',
-                value: state.user_email ? state.user_email : '',
-                placeholder: 'E-Mail.',
-                onChange: mutators.onEMailChange }),
-            center,
-            React.createElement(
-                'div',
-                null,
-                bottom
-            ),
-            React.createElement(
-                Button,
-                { type: 'submit', id: 'user_settings_save_changes_button' },
-                'Save'
-            )
-        )
-    );
-
-    return top;
-};
-
-class MDACSUserSettings extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = MDACSUserSettingsInitialState(props);
-    }
-
-    render() {
-        return MDACSUserSettingsView(this.props, this.state, this.setState.bind(this), MDACSUserSettingsMutators);
     }
 }
 

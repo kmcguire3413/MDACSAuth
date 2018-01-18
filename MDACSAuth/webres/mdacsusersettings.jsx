@@ -18,21 +18,28 @@ const MDACSUserSettingsInitialState = (props) => {
 /// <pure/>
 const MDACSUserSettingsMutators = {
     permCheck: (props, state, cb) =>
-        props.current_admin || props.current_user == state.user_user ? cb() : false,
-    utility: (k, e) => {
+        props.current_admin || prop .current_user == state.user_user ? cb() : false,
+    utility: (props, state, setState, k, e) => {
         MDACSUserSettingsMutators.permCheck(props, state, () => {
             let tmp = {};
             tmp[k] = e.target.value;
             setState(tmp);
         });
     },
-    onRealNameChange: (e) => MDACSUserSettingsMutators.utility('user_name', e),
-    onPasswordChange: (e) => MDACSUserSettingsMutators.utility('user_password', e),
-    onPhoneChange: (e) => MDACSUserSettingsMutators.utility('user_phone', e),
-    onEMailChange: (e) => MDACSUserSettingsMutators.utility('user_email', e),
-    onUserFilterChange: (e) => MDACSUserSettingsMutators.utility('user_userfilter', e),
-    onIsAdminChange: (e) => MDACSUserSettingsMutators.utility('user_admin', e),
-    onCanDeleteChange: (e) => MDACSUserSettingsMutators.utility('user_can_delete', e),
+    onRealNameChange: (e, props, state, setState) =>
+    MDACSUserSettingsMutators.utility(props, state, setState, 'user_name', e),
+    onPasswordChange: (e, props, state, setState) =>
+    MDACSUserSettingsMutators.utility(props, state, setState, 'user_password', e),
+    onPhoneChange: (e, props, state, setState) =>
+    MDACSUserSettingsMutators.utility(props, state, setState, 'user_phone', e),
+    onEMailChange: (e, props, state, setState) =>
+    MDACSUserSettingsMutators.utility(props, state, setState, 'user_email', e),
+    onUserFilterChange: (e, props, state, setState) =>
+    MDACSUserSettingsMutators.utility(props, state, setState, 'user_userfilter', e),
+    onIsAdminChange: (e, props, state, setState) =>
+    MDACSUserSettingsMutators.utility(props, state, setState, 'user_admin', e),
+    onCanDeleteChange: (e, props, state, setState) =>
+    MDACSUserSettingsMutators.utility(props, state, setState, 'user_can_delete', e),
     onDeleteUser: (props, state, setState) =>
         props.current_admin ?
             props.dao_auth.userDelete(
@@ -66,6 +73,8 @@ const MDACSUserSettingsMutators = {
             can_delete: state.user_can_delete === 'on' ? true : false,
             userfilter: state.user_userfilter,
         };
+
+        console.log('updating user');
 
         props.dao_auth.userSet(
             user,
@@ -140,15 +149,15 @@ const MDACSUserSettingsViewCenter = (props, state, setState, mutators) => {
                     type="text"
                     value={state.user_userfilter ? state.user_userfilter : ''}
                     placeholder="Filter expression."
-                    onChange={mutators.onUserFilterChange} />
+                    onChange={(e) => mutators.onUserFilterChange(e, props, state, setState)} />
                 <Checkbox
                     id="user_settings_admin"
                     defaultChecked={state.user_admin}
-                    onChange={mutators.onIsAdminChange}>Administrator</Checkbox>
+                    onChange={(e) => mutators.onIsAdminChange(e, props, state, setState)}>Administrator</Checkbox>
                 <Checkbox
                     id="user_settings_can_delete"
                     defaultChecked={state.user_can_delete}
-                    onChange={mutators.onCanDeleteChange}>Can Delete</Checkbox>
+                    onChange={(e) => mutators.onCanDeleteChange(e, props, state, setState)}>Can Delete</Checkbox>
                 <div>
                     <Button
                         id="user_settings_delete_user_button"
@@ -164,6 +173,7 @@ const MDACSUserSettingsViewCenter = (props, state, setState, mutators) => {
         </div>;
 };
 
+/// <pure/>
 const MDACSUserSettingsView = (props, state, setState, mutators) => {
     if (state.delete_success) {
         return <div><Alert bsStyle="success">The user has been deleted.</Alert></div>
@@ -190,27 +200,28 @@ const MDACSUserSettingsView = (props, state, setState, mutators) => {
                     type="text"
                     value={state.user_name}
                     placeholder="Real name."
-                    onChange={mutators.onRealNameChange} />
+                    onChange={(e) => mutators.onRealNameChange(e, props, state, setState)} />
                 <ControlLabel>Password</ControlLabel>
                 <FormControl
                     id="user_settings_password"
                     type="text"
                     value={state.user_password}
                     placeholder="Only set to new password if changing the password."
-                    onChange={mutators.onPasswordChange} />
+                    onChange={(e) => mutators.onPasswordChange(e, props, state, setState)} />
                 <ControlLabel>Contact Phone</ControlLabel>
                 <FormControl
                     id="user_settings_phone"
                     type="text"
                     value={state.user_phone ? state.user_phone : ''}
-                    placeholder="Phone." onChange={mutators.onPhoneChange} />
+                    placeholder="Phone."
+                    onChange={(e) => mutators.onPhoneChange(e, props, state, setState)} />
                 <ControlLabel>Contact E-Mail</ControlLabel>
                 <FormControl
                     id="user_settings_email"
                     type="text"
                     value={state.user_email ? state.user_email : ''}
                     placeholder="E-Mail."
-                    onChange={mutators.onEMailChange} />
+                    onChange={(e) => mutators.onEMailChange(e, props, state, setState)} />
                 {center}
                 <div>
                     {bottom}

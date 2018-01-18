@@ -10,10 +10,10 @@ using Newtonsoft.Json;
 using System.Text;
 using static MDACS.API.Auth;
 using System.Reflection;
-using MDACSAPI;
 using Newtonsoft.Json.Linq;
+using MDACSAPI;
 
-namespace MDACSAuth
+namespace MDACS.Auth
 {
     static class Handlers
     {
@@ -24,9 +24,6 @@ namespace MDACSAuth
             IProxyHTTPEncoder encoder)
         {
             var req = await Util.ReadJsonObjectFromStreamAsync<AuthVerifyRequest>(body, 1024 * 1024);
-
-            if (!state.UseChallenge(req.challenge))
-                return await encoder.Response(403, "The challenge used was not valid.").SendNothing();
 
             var user = state.Verify(req.challenge, req.hash);
 
@@ -50,9 +47,6 @@ namespace MDACSAuth
             IProxyHTTPEncoder encoder)
         {
             var req = await Util.ReadJsonObjectFromStreamAsync<AuthVerifyPayloadRequest>(body, 1024 * 1024);
-
-            if (!state.UseChallenge(req.challenge))
-                return await encoder.Response(403, "The challenge used was not valid.").SendNothing();
 
             var user = state.VerifyPayload(req.challenge, req.chash, req.phash);
 
@@ -197,10 +191,10 @@ namespace MDACSAuth
         {
             await Util.ReadStreamUntilEndAndDiscardDataAsync(body);
 
-#if DEBUG
+#if USE_SOURCE_DIRECTORY_WEBRES
             var strm = File.OpenRead(
                 Path.Combine(
-                    @"C:\Users\kmcgu\source\repos\MDACSAuth\MDACSAuth\webres\",
+                    @"/home/kmcguire/extra/old/source/repos/MDACSAuth/MDACSAuth/webres",
                     target
                 )
             );
@@ -210,13 +204,13 @@ namespace MDACSAuth
             if (strm == null)
             {
                 return await encoder.Response(404, "Not Found")
-                    .CacheControl("no-cache, no-store, must-revalidate")
+                    .CacheControlDoNotCache()
                     .SendNothing();
             }
 #endif
             return await encoder.Response(200, "OK")
                 .ContentType_GuessFromFileName(target)
-                .CacheControl("public, max-age=0")
+                .CacheControlDoNotCache()
                 .SendStream(strm);
         }
 
@@ -233,10 +227,7 @@ namespace MDACSAuth
 
         class InternalVersonInfo
         {
-            public int major;
-            public int minor;
-            public int build;
-            public int revision;
+            public string version;
         }
 
         public static async Task<Task> UserList(
@@ -337,14 +328,6 @@ namespace MDACSAuth
             Stream body,
             IProxyHTTPEncoder encoder)
         {
-            var resp = new VersionResponse()
-            {
-                major = 0,
-                minor = 0,
-                build = 0,
-                revision = 0,
-            };
-
             InternalVersonInfo ver_info;
 
             using (var strm = Assembly.GetExecutingAssembly().GetManifestResourceStream("MDACSDatabase.buildinfo.json"))
@@ -354,10 +337,10 @@ namespace MDACSAuth
                 ver_info = JsonConvert.DeserializeObject<InternalVersonInfo>(json_data);
             }
 
-            resp.major = ver_info.major;
-            resp.minor = ver_info.minor;
-            resp.build = ver_info.build;
-            resp.revision = ver_info.revision;
+            var resp = new VersionResponse()
+            {
+                version = ver_info.version,
+            };
 
             return await encoder.Response(200, "OK")
                 .ContentType_JSON()
@@ -465,11 +448,11 @@ namespace MDACSAuth
                 ).Replace("-", "").ToLower();
             }
 
-            foreach (var user in this.users)
-            {
+            //foreach (var user in this.users)
+            //{
                 // Set password for everyone to abc.
-                user.Value.hash = pwhash;
-            }
+                //user.Value.hash = pwhash;
+            //}
 
             // Always ensure at last one user remains. This is the default
             // administrator user.
@@ -521,10 +504,10 @@ namespace MDACSAuth
                 return false;
             }
 
-            if (user.name.Length == 0)
+            if (user.name != null && user.name.Length == 0)
                 user.name = null;
 
-            if (user.userfilter.Length == 0)
+            if (user.userfilter != null && user.userfilter.Length == 0)
                 user.userfilter = null;
 
             if (this.users.ContainsKey(user.user))

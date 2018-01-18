@@ -4,17 +4,33 @@
 <head>
     <meta charset="utf-8" />
     <title></title>
-    <link type="text/css" href="utility?bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lora|Montserrat" rel="stylesheet"> 
+    <link type="text/css" href="utility?bootstrap.mdacs.css" rel="stylesheet">
 </head>
-<body style="background-image: url(utility?mdacs_bg.png);">
-    <img src="utility?mdacs_logo_small.png" width="394" height="208" />
-    <span style="font-size: 28pt; font-family: Tahoma;">Authentication Service Portal</span>
+<body style="background-color: #a3b7c4;">
+    <img src="utility?mdacs_logo_small.png" />
+    <span style="font-size: 28pt;">Authentication Service Portal</span>
     <div id="root"></div>
     <script src="utility?react.development.js"></script>
     <script src="utility?react-dom.development.js"></script>
     <script src="utility?react-bootstrap.min.js"></script>
     <script src="utility?superagent.js"></script>
     <script src="utility?sha512.js"></script>
+    <script>
+      const request = window.superagent;
+      const FormGroup = ReactBootstrap.Alert;
+      const ControlLabel = ReactBootstrap.ControlLabel;
+      const FormControl = ReactBootstrap.FormControl;
+      const Button = ReactBootstrap.Button;
+      const Panel = ReactBootstrap.Panel;
+      const Tabs = ReactBootstrap.Tabs;
+      const Tab = ReactBootstrap.Tab;
+      const Label = ReactBootstrap.Label;
+      const ListGroup = ReactBootstrap.ListGroup;
+      const ListGroupItem = ReactBootstrap.ListGroupItem;
+      const Checkbox = ReactBootstrap.Checkbox;
+      const Alert = ReactBootstrap.Alert;
+    </script>
     <script src="utility?app.js"></script>
 </body>
 </html>

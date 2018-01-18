@@ -1,34 +1,9 @@
-'''
-	This python script performs pre-commit functions.
-
-	(1) Automatically update the version.
-'''
-
-'''
-	$ cat MDACSAuth.csproj
-	<Project Sdk="Microsoft.NET.Sdk">
-
-	  <PropertyGroup>
-		<OutputType>Exe</OutputType>
-		<TargetFramework>netcoreapp2.0</TargetFramework>
-		<AssemblyVersion>1.1.1.1</AssemblyVersion>
-		<FileVersion>2.2.2.2</FileVersion>
-	  </PropertyGroup>
-
-	  <ItemGroup>
-		<Reference Include="MDACSHTTPServer">
-		  <HintPath>..\..\MDACSHTTPServer\bin\Debug\netstandard2.0\MDACSHTTPServer.dll</HintPath>
-		</Reference>
-	  </ItemGroup>
-
-	</Project>
-'''
-
 import subprocess
 import xml.etree.ElementTree as et
 import datetime
 import json
 import os.path
+import os
 
 def IncrementVersionString(verstr):
 	verstr = verstr.split('.')
@@ -60,35 +35,56 @@ def IncrementVersionOnProject(project, breaking_changes=False):
 
 	buildinfo['version'] = IncrementVersionString(buildinfo['version'])
 
-	gitb = subprocess.Popen('git branch -vv', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	gitb = gitb.stdout.read().decode('utf8')
-
-	cur_branch = None
-	cur_commit = None
-	cur_message_line = None
-
-	for line in gitb.split('\n'):
-		line = line.strip()
-		parts = line.split(' ')
-
-		if parts[0] == '*':
-			cur_branch = parts[1].strip()
-			cur_commit = parts[2].strip()
-			cur_message_line = ' '.join(parts[3:])
-
-	if cur_branch is None:
-		raise Exception('Unable to get the current GIT branch information using the command `git branch`.')
-
-	buildinfo['git_branch'] = cur_branch
-	buildinfo['git_commit'] = cur_commit
-	buildinfo['git_message_line'] = cur_message_line
-
 	fd = open(buildinfo_path, 'w')
 	fd.write(json.dumps(buildinfo))
 	fd.close()
 
-	fd = open('gitlog.txt', 'w')
-	gitlog = subprocess.Popen('git log --graph', stdout=fd.fileno(), stderr=subprocess.PIPE)
+print('+ incrementing version')
+IncrementVersionOnProject('MDACSDatabase')
+
+def jsx_to_js(infile, outfile, outfilemode):
+	print('+ compiling JSX into JS for %s' % infile)
+	stdout, stderr = subprocess.Popen([
+			'babel',
+			'--plugins',
+			'transform-react-jsx',
+			infile,
+	], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate('')
+
+	stderr = stderr.decode('utf8')
+	stdout = stdout.decode('utf8')
+
+	fd = open(outfile, outfilemode)
+	fd.write(stdout)
 	fd.close()
 
-IncrementVersionOnProject('MDACSDatabase')
+	if len(stderr) > 0:
+		raise Exception('jsx_to_js failed')
+
+def compile_jsx_and_concat(pdir):
+	nodes = os.listdir(pdir)
+
+	open(os.path.join(pdir, 'app.js'), 'w').close()
+
+	for node in nodes:
+		(node_base, ext) = os.path.splitext(node)
+
+		if ext != '.jsx':
+			continue
+		
+		if node_base == 'app':
+			continue
+		
+		jsx_to_js(
+			os.path.join(pdir, node), 
+			os.path.join(pdir, 'app.js'),
+			'a'
+		)
+	
+	jsx_to_js(
+		os.path.join(pdir, 'app.jsx'), 
+		os.path.join(pdir, 'app.js'),
+		'a'
+	)	
+
+compile_jsx_and_concat('./webres')

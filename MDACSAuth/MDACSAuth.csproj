@@ -7,6 +7,14 @@
     <FileVersion>0.0.201.2004</FileVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG;NETCOREAPP2_0;USE_SOURCE_DIRECTORY_WEBRES</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>NETCOREAPP2_0</DefineConstants>
+  </PropertyGroup>  
+
   <ItemGroup>
     <Compile Remove="node_modules\**" />
     <EmbeddedResource Remove="node_modules\**" />
@@ -16,8 +24,12 @@
   <ItemGroup>
     <None Remove="webres\angular.min.js" />
     <None Remove="webres\app.js" />
-    <None Remove="webres\app.jsx" />
+    <None Remove="webres\bootstrap-theme.min.css" />
+    <None Remove="webres\bootstrap.min.css" />
+    <None Remove="webres\bootstrap.mdacs.css" />
     <None Remove="webres\index.html" />
+    <None Remove="webres\mdacs_logo_small.png" />
+    <None Remove="webres\react-bootstrap.min.js" />
     <None Remove="webres\react-dom.development.js" />
     <None Remove="webres\react.development.js" />
     <None Remove="webres\sha512.js" />
@@ -26,9 +38,13 @@
 
   <ItemGroup>
     <EmbeddedResource Include="webres\angular.min.js" />
-    <EmbeddedResource Include="webres\app.js" />
     <EmbeddedResource Include="webres\app.jsx" />
+    <EmbeddedResource Include="webres\bootstrap-theme.min.css" />
+    <EmbeddedResource Include="webres\bootstrap.min.css" />
+    <EmbeddedResource Include="webres\bootstrap.mdacs.css" />
     <EmbeddedResource Include="webres\index.html" />
+    <EmbeddedResource Include="webres\mdacs_logo_small.png" />
+    <EmbeddedResource Include="webres\react-bootstrap.min.js" />
     <EmbeddedResource Include="webres\react-dom.development.js" />
     <EmbeddedResource Include="webres\react.development.js" />
     <EmbeddedResource Include="webres\sha512.js" />
@@ -40,16 +56,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="MDACSAPI">
-      <HintPath>..\..\MDACSDatabase\MDACSAPI\bin\Debug\netstandard2.0\MDACSAPI.dll</HintPath>
-    </Reference>
-    <Reference Include="MDACSHTTPServer">
-      <HintPath>..\..\MDACSHTTPServer\bin\Release\netstandard2.0\MDACSHTTPServer.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\..\MDACSDatabase\MDACSAPI\MDACSAPI.csproj" />
+    <ProjectReference Include="..\..\MDACSHTTPServer\MDACSHTTPServer.csproj" />
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="pre-build.bat" />
+    <Exec Command="/usr/bin/python3 pre-build.py" />
   </Target>
 
 </Project>

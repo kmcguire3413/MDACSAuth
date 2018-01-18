@@ -1,17 +1,3 @@
-﻿const request = window.superagent;
-const FormGroup = ReactBootstrap.Alert;
-const ControlLabel = ReactBootstrap.ControlLabel;
-const FormControl = ReactBootstrap.FormControl;
-const Button = ReactBootstrap.Button;
-const Panel = ReactBootstrap.Panel;
-const Tabs = ReactBootstrap.Tabs;
-const Tab = ReactBootstrap.Tab;
-const Label = ReactBootstrap.Label;
-const ListGroup = ReactBootstrap.ListGroup;
-const ListGroupItem = ReactBootstrap.ListGroupItem;
-const Checkbox = ReactBootstrap.Checkbox;
-const Alert = ReactBootstrap.Alert;
-
 class AuthNetworkDAO {
     constructor(
         url_auth
