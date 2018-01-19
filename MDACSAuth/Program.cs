@@ -548,6 +548,8 @@ namespace MDACS.Auth
                     hash = null,
                     name = user.name,
                     user = user.user,
+                    phone = user.phone,
+                    email = user.email,
                     userfilter = user.userfilter
                 };
 

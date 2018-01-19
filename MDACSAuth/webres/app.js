@@ -46,18 +46,26 @@ const MDACSUserSettingsMutators = {
     onUpdateUser: (e, props, state, setState) => {
         e.preventDefault();
 
+        let hash;
+
+        if (state.user_password) {
+            hash = sha512(state.user_password);
+        } else {
+            hash = null;
+        }
+
+        console.log('state.user_admin=' + state.user_admin);
+
         let user = {
             user: state.user_user,
             name: state.user_name,
             phone: state.user_phone,
             email: state.user_email,
-            hash: sha512(state.user_password),
-            admin: state.user_admin === 'on' ? true : false,
-            can_delete: state.user_can_delete === 'on' ? true : false,
+            hash: hash,
+            admin: state.user_admin,
+            can_delete: state.user_can_delete,
             userfilter: state.user_userfilter
         };
-
-        console.log('updating user');
 
         props.dao_auth.userSet(user, resp => {
             setState({
