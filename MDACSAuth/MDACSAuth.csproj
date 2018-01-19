@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="webres\angular.min.js" />
-    <EmbeddedResource Include="webres\app.jsx" />
+    <EmbeddedResource Include="webres\app.js" />
     <EmbeddedResource Include="webres\bootstrap-theme.min.css" />
     <EmbeddedResource Include="webres\bootstrap.min.css" />
     <EmbeddedResource Include="webres\bootstrap.mdacs.css" />
