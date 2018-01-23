@@ -431,7 +431,10 @@ namespace MDACS.Auth
 
             try
             {
-                this.users = JsonConvert.DeserializeObject<Dictionary<string, User>>(File.ReadAllText(users_file_path));
+                this.users = 
+                    JsonConvert.DeserializeObject<
+                        Dictionary<string, User>
+                    >(File.ReadAllText(users_file_path));
             } catch (JsonSerializationException ex)
             {
                 Logger.WriteCriticalString($"An exception happened during deserialization of the users.json file:\n\n{ex.ToString()}");
@@ -458,6 +461,10 @@ namespace MDACS.Auth
             // administrator user.
             if (this.users.Count == 0)
             {
+                Logger.WriteCriticalString(
+                    "Created default admin user because users.json was empty or non-existant."
+                );
+
                 this.users.Add("admin", new User()
                 {
                     admin = true,
@@ -467,6 +474,8 @@ namespace MDACS.Auth
                     user = "admin",
                     userfilter = null,
                 });
+
+                this.FlushUsersToDisk().Wait();
             }
         }
 
