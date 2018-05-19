@@ -31,7 +31,6 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="/usr/bin/python3 pre-build.py" />
   </Target>
 
 </Project>
