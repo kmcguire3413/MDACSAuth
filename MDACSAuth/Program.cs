@@ -475,6 +475,16 @@ namespace MDACS.Auth
                     userfilter = null,
                 });
 
+                this.users.Add("apple", new User()
+                {
+                    admin = false,
+                    can_delete = false,
+                    hash = pwhash,
+                    name = "Apple User",
+                    user = "apple",
+                    userfilter = null,
+                });                
+
                 this.FlushUsersToDisk().Wait();
             }
         }

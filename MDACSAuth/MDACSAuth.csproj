@@ -22,41 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="webres\angular.min.js" />
-    <None Remove="webres\app.js" />
-    <None Remove="webres\bootstrap-theme.min.css" />
-    <None Remove="webres\bootstrap.min.css" />
-    <None Remove="webres\bootstrap.mdacs.css" />
-    <None Remove="webres\index.html" />
-    <None Remove="webres\mdacs_logo_small.png" />
-    <None Remove="webres\react-bootstrap.min.js" />
-    <None Remove="webres\react-dom.development.js" />
-    <None Remove="webres\react.development.js" />
-    <None Remove="webres\sha512.js" />
-    <None Remove="webres\superagent.js" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="webres\angular.min.js" />
-    <EmbeddedResource Include="webres\app.js" />
-    <EmbeddedResource Include="webres\bootstrap-theme.min.css" />
-    <EmbeddedResource Include="webres\bootstrap.min.css" />
-    <EmbeddedResource Include="webres\bootstrap.mdacs.css" />
-    <EmbeddedResource Include="webres\index.html" />
-    <EmbeddedResource Include="webres\mdacs_logo_small.png" />
-    <EmbeddedResource Include="webres\react-bootstrap.min.js" />
-    <EmbeddedResource Include="webres\react-dom.development.js" />
-    <EmbeddedResource Include="webres\react.development.js" />
-    <EmbeddedResource Include="webres\sha512.js" />
-    <EmbeddedResource Include="webres\superagent.js" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\MDACSDatabase\MDACSAPI\MDACSAPI.csproj" />
+    <ProjectReference Include="..\..\MDACSAPI\MDACSAPI.csproj" />
     <ProjectReference Include="..\..\MDACSHTTPServer\MDACSHTTPServer.csproj" />
   </ItemGroup>
 

@@ -87,4 +87,4 @@ def compile_jsx_and_concat(pdir):
 		'a'
 	)	
 
-compile_jsx_and_concat('./webres')
+#compile_jsx_and_concat('./webres')
