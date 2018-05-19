@@ -1,1 +1,18 @@
-{"users":[]}
+{
+    "admin":{
+        "name":"Default Administrator User",
+        "user":"admin",
+        "hash":"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f","admin":true,"userfilter":null,"can_delete":true},"bob":{"name":"bob of bob","user":"bob","hash":"0416a26ba554334286b1954918ecad7ba6c33575b49df915ff3367b5cef7ecd93b1f0b436636667b27b363011543971f1c81c3151d5ef72733501c1ff33c34af","admin":true,"userfilter":"userfilter_bob","can_delete":true},"jane":{"name":"jane of jane","user":"jane","hash":"1769722a9dc2fd3ae675264e61a51bd7359eb1346aa2f096e68513e78e86f4c68bee853ef7db764fff7ce707ef367a6644e71511ca3f31e52a4cbc02a1091e3c","admin":true,"userfilter":"userfilter_jane","can_delete":true},"jack":{"name":"jack of jack","user":"jack","hash":"77c62ff676394d2e1962c6f7be65ea23b5650a3e69359b4337f9dc4ea6165afec4787529e690708b1a8c9fb89fe105c151838a9ea235f7b1763982f6256f5b92","admin":true,"userfilter":"userfilter_jack","can_delete":true},"barney":{"name":"barney of barney","user":"barney","hash":"de12b5ec8eb4a03b5faa48f9d2f869e877ee24cb5d352a6b042916d0300cb6459285b264f817a819e777d6ccff7a745c0ac9280545bed31602d2d7d91acee51b",
+        "admin":true,
+        "userfilter": null,
+        "can_delete":true
+    },
+    "apple":{
+        "name":"normal user",
+        "user":"apple",
+        "hash":"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f","admin":true,"userfilter":null,"can_delete":true},"bob":{"name":"bob of bob","user":"bob","hash":"0416a26ba554334286b1954918ecad7ba6c33575b49df915ff3367b5cef7ecd93b1f0b436636667b27b363011543971f1c81c3151d5ef72733501c1ff33c34af","admin":true,"userfilter":"userfilter_bob","can_delete":true},"jane":{"name":"jane of jane","user":"jane","hash":"1769722a9dc2fd3ae675264e61a51bd7359eb1346aa2f096e68513e78e86f4c68bee853ef7db764fff7ce707ef367a6644e71511ca3f31e52a4cbc02a1091e3c","admin":true,"userfilter":"userfilter_jane","can_delete":true},"jack":{"name":"jack of jack","user":"jack","hash":"77c62ff676394d2e1962c6f7be65ea23b5650a3e69359b4337f9dc4ea6165afec4787529e690708b1a8c9fb89fe105c151838a9ea235f7b1763982f6256f5b92","admin":true,"userfilter":"userfilter_jack","can_delete":true},"barney":{"name":"barney of barney","user":"barney","hash":"de12b5ec8eb4a03b5faa48f9d2f869e877ee24cb5d352a6b042916d0300cb6459285b264f817a819e777d6ccff7a745c0ac9280545bed31602d2d7d91acee51b",
+        "admin":false,
+        "userfilter": null,
+        "can_delete": false
+    }    
+}

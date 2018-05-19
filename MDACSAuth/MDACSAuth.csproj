@@ -7,22 +7,18 @@
     <FileVersion>0.0.201.2004</FileVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="webres\angular.min.js" />
-    <None Remove="webres\app.js" />
-    <None Remove="webres\app.jsx" />
-    <None Remove="webres\index.html" />
-    <None Remove="webres\react-dom.development.js" />
-    <None Remove="webres\react.development.js" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG;NETCOREAPP2_0;USE_SOURCE_DIRECTORY_WEBRES</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>NETCOREAPP2_0</DefineConstants>
+  </PropertyGroup>  
 
   <ItemGroup>
-    <EmbeddedResource Include="webres\angular.min.js" />
-    <EmbeddedResource Include="webres\app.js" />
-    <EmbeddedResource Include="webres\app.jsx" />
-    <EmbeddedResource Include="webres\index.html" />
-    <EmbeddedResource Include="webres\react-dom.development.js" />
-    <EmbeddedResource Include="webres\react.development.js" />
+    <Compile Remove="node_modules\**" />
+    <EmbeddedResource Remove="node_modules\**" />
+    <None Remove="node_modules\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,16 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="MDACSAPI">
-      <HintPath>..\..\MDACSDatabase\MDACSAPI\bin\Debug\netstandard2.0\MDACSAPI.dll</HintPath>
-    </Reference>
-    <Reference Include="MDACSHTTPServer">
-      <HintPath>..\..\MDACSHTTPServer\bin\Debug\netstandard2.0\MDACSHTTPServer.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\MDACSAPI\MDACSAPI.csproj" />
+    <ProjectReference Include="..\MDACSHTTPServer\MDACSHTTPServer.csproj" />
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="pre-build.bat" />
   </Target>
 
 </Project>
