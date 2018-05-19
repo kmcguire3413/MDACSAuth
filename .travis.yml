@@ -11,6 +11,7 @@ install: true
 before_script: true
 script:
  - dotnet restore
+ - dotnet build
 before_cache: true
 before_deploy: true
 deploy:
