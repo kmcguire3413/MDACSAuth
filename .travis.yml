@@ -11,10 +11,10 @@ install: true
 before_script: true
 script:
  - dotnet restore
-before_cache: 
-before_deploy:
+before_cache: true
+before_deploy: true
 deploy:
         skip_cleanup: false
-after_deploy:
-after_script:
+after_deploy: true
+after_script: true
 
