@@ -162,69 +162,6 @@ namespace MDACS.Auth
             );
         }
 
-        public static async Task<Task> Index(
-            ServerState state,
-            HTTPRequest request,
-            Stream body,
-            IProxyHTTPEncoder encoder)
-        {
-            await Util.ReadStreamUntilEndAndDiscardDataAsync(body);
-
-            return await StaticRoute("index.html", state, request, body, encoder);
-        }
-
-        /// <summary>
-        /// Helper method used to send data stored as a resource under the webres folder (namespace).
-        /// </summary>
-        /// <param name="target">The name of the resource in the webres folder/namespace.</param>
-        /// <param name="state">Pass-through parameter.</param>
-        /// <param name="request">Pass-through parameter.</param>
-        /// <param name="body">Pass-through parameter.</param>
-        /// <param name="encoder">Pass-through parameter.</param>
-        /// <returns>A task object which may or may not be completed already. This also may need to be returned as a dependency of the handler completion.</returns>
-        private static async Task<Task> StaticRoute(
-            string target,
-            ServerState state,
-            HTTPRequest request,
-            Stream body,
-            IProxyHTTPEncoder encoder)
-        {
-            await Util.ReadStreamUntilEndAndDiscardDataAsync(body);
-
-#if USE_SOURCE_DIRECTORY_WEBRES
-            var strm = File.OpenRead(
-                Path.Combine(
-                    @"/home/kmcguire/extra/old/source/repos/MDACSAuth/MDACSAuth/webres",
-                    target
-                )
-            );
-#else
-            var strm = Assembly.GetExecutingAssembly().GetManifestResourceStream($"MDACSAuth.webres.{target}");
-
-            if (strm == null)
-            {
-                return await encoder.Response(404, "Not Found")
-                    .CacheControlDoNotCache()
-                    .SendNothing();
-            }
-#endif
-            return await encoder.Response(200, "OK")
-                .ContentType_GuessFromFileName(target)
-                .CacheControlDoNotCache()
-                .SendStream(strm);
-        }
-
-        public static async Task<Task> Utility(
-            ServerState state,
-            HTTPRequest request,
-            Stream body,
-            IProxyHTTPEncoder encoder)
-        {
-            await Util.ReadStreamUntilEndAndDiscardDataAsync(body);
-
-            return await StaticRoute(request.query_string, state, request, body, encoder);
-        }
-
         class InternalVersonInfo
         {
             public string version;
@@ -321,113 +258,40 @@ namespace MDACS.Auth
                     });
             }
         }
-
-        public static async Task<Task> Version(
-            ServerState state,
-            HTTPRequest request,
-            Stream body,
-            IProxyHTTPEncoder encoder)
-        {
-            InternalVersonInfo ver_info;
-
-            using (var strm = Assembly.GetExecutingAssembly().GetManifestResourceStream("MDACSDatabase.buildinfo.json"))
-            {
-                var json_data = await new StreamReader(strm).ReadToEndAsync();
-
-                ver_info = JsonConvert.DeserializeObject<InternalVersonInfo>(json_data);
-            }
-
-            var resp = new VersionResponse()
-            {
-                version = ver_info.version,
-            };
-
-            return await encoder.Response(200, "OK")
-                .ContentType_JSON()
-                .SendJsonFromObject(resp);
-        }
-
-        /// <summary>
-        /// Provides a cryptographicly protected token that has a specific amount of time
-        /// it can exist before expiration. This is done by keeping the public key of any
-        /// other pertinent service on file and encrypting a symmetric key using these public
-        /// keys onto the token. This cryptographic key is used to encrypt the hash of the token.
-        /// 
-        /// Services whom recieve this token can validate it by finding their appropriate service
-        /// entry. Decrypting their symmetrical cryptographic key (each entry can use a different
-        /// key). Using this key the message hash can be quickly validated using a symmetrical
-        /// algorithm. 
-        /// 
-        /// The token contains a lifetime which is also readable by the client (limited trust) which
-        /// indicates the date and time at which the token must expire. The client is responsible for
-        /// being aware of this and renewing the token before the lifetime expires.
-        /// </summary>
-        /// <param name="state"></param>
-        /// <param name="request"></param>
-        /// <param name="body"></param>
-        /// <param name="encoder"></param>
-        /// <returns></returns>
-        public static async Task<Task> Token(
-            ServerState state,
-            HTTPRequest request,
-            Stream body,
-            IProxyHTTPEncoder encoder)
-        {
-            /*
-                The token signed with the authentication service's
-                private key. Verifiable by other services using the
-                public key they hold for the authentication service.
-
-                {
-                    data: 'base64',
-                    signature: 'base64',
-                }
-
-
-                Data could be:
-
-                {
-                    username: '',
-                    realname: '',
-                    email: '',
-                    phone: '',
-                    validuntil: '', // very important part of token (lifetime)
-                }
-            */
-
-
-            return Task.CompletedTask;
-        }
     }
 
     class ServerState
     {
-        public string data_base_path;
+        public string dataBasePath;
         public RandomNumberGenerator crng;
-        private Queue<string> challenges;
-        private Dictionary<string, User> users;
+        Queue<string> challenges;
+        Dictionary<string, User> users;
+        int maximumChallengesOutstanding;
+
 
         public ServerState(
-            string data_base_path
+            string dataBasePath,
+            int maximumChallengesOutstanding
         )
         {
-            this.data_base_path = data_base_path;
+            this.dataBasePath = dataBasePath;
+            this.maximumChallengesOutstanding = maximumChallengesOutstanding;
 
             crng = RandomNumberGenerator.Create();
             challenges = new Queue<string>();
 
-            var users_file_path = Path.Combine(data_base_path, "users.json");
+            var users_file_path = Path.Combine(dataBasePath, "users.json");
 
             if (!File.Exists(users_file_path))
             {
-                Logger.WriteDebugString($"Creating users.json at location {data_base_path}.");
+                Logger.WriteDebugString($"Creating users.json at location {dataBasePath}.");
 
                 var defusrdata = new Dictionary<string, User>();
 
                 File.WriteAllText(users_file_path, JsonConvert.SerializeObject(defusrdata));
             }
 
-            Logger.WriteDebugString($"Loading users.json from {data_base_path}.");
+            Logger.WriteDebugString($"Loading users.json from {dataBasePath}.");
 
             try
             {
@@ -491,7 +355,7 @@ namespace MDACS.Auth
 
         public async Task<bool> FlushUsersToDisk()
         {
-            var users_file_path = Path.Combine(this.data_base_path, "users.json");
+            var users_file_path = Path.Combine(this.dataBasePath, "users.json");
 
             var fp = new StreamWriter(File.Open(users_file_path, FileMode.Create));
 
@@ -687,8 +551,7 @@ namespace MDACS.Auth
 
             challenges.Enqueue(challenge);
 
-            // SEE: Important bottleneck and security measure.
-            if (challenges.Count > 10)
+            if (challenges.Count > maximumChallengesOutstanding)
             {
                 challenges.Dequeue();
             }
@@ -717,6 +580,20 @@ namespace MDACS.Auth
 
             return false;
         }
+
+        /// <summary>
+        /// An asynchronous worker that fetches commands, executes commands, and pushes the results
+        /// back to the command service.
+        /// </summary>
+        public async Task CommandControlWorker() {
+            while (true) {
+                // fetch commands
+                // iterate commands
+                    // execute command
+                    // push command result/response
+                await Task.Delay(1000 * 30);
+            }
+        }
     }
 
     public class ProgramConfig
@@ -725,6 +602,7 @@ namespace MDACS.Auth
         public string ssl_cert_pass;
         public string data_base_path;
         public ushort port;
+        public int maximumChallengesOutstanding;
     } 
 
     public class Program
@@ -738,6 +616,8 @@ namespace MDACS.Auth
                     ssl_cert_path = "The path to the SSL/TLS certificate, likely in PFX format.",
                     ssl_cert_pass = "The password that protects the private key in the certificate.",
                     data_base_path = "The path to the data directory or location.",
+                    port = 0,
+                    maximumChallengesOutstanding = 100,
                 };
 
                 File.WriteAllText(args[0], JsonConvert.SerializeObject(defcfg));
@@ -752,20 +632,17 @@ namespace MDACS.Auth
 
             var handlers = new Dictionary<string, SimpleServer<ServerState>.SimpleHTTPHandler>();
 
-            handlers.Add("/utility", Handlers.Utility);
-            handlers.Add("/", Handlers.Index);
             handlers.Add("/is-login-valid", Handlers.IsLoginValid);
             handlers.Add("/verify", Handlers.Verify);
             handlers.Add("/verify-payload", Handlers.VerifyPayload);
             handlers.Add("/user-set", Handlers.UserSet);
             handlers.Add("/user-delete", Handlers.UserDelete);
             handlers.Add("/challenge", Handlers.Challenge);
-            handlers.Add("/version", Handlers.Version);
-            handlers.Add("/token", Handlers.Token);
             handlers.Add("/user-list", Handlers.UserList);
 
             var state = new ServerState(
-                cfg.data_base_path
+                cfg.data_base_path,
+                cfg.maximumChallengesOutstanding
             );
 
             var server = SimpleServer<ServerState>.Create(
@@ -776,7 +653,7 @@ namespace MDACS.Auth
                 cfg.ssl_cert_pass
             );
 
-            server.Wait();
+            Task.WaitAny(server, state.CommandControlWorker());
         }
     }
 }
