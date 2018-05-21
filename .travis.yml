@@ -13,6 +13,25 @@ script:
  - cd MDACSAuth
  - dotnet restore
  - dotnet build
+ - git config --local user.name "Travis-CI"
+ - git config --local user.email "none@none.none"
+ - printf -- "$GHSSHK" > ~/.ssh/id_github_mdacs
+ - chmod 600 ~/.ssh/id_github_mdacs
+ - echo "Host github.com" >> ~/.ssh/config
+ - echo "  IdentityFile ~/.ssh/id_github_mdacs" >> ~/.ssh/config
+ - chmod 600 ~/.ssh/config
+ - mkdir ~/tmp/
+ - cp ./bin/Debug/netcoreapp2.0/* ~/tmp/
+ - cd ~
+ - git clone git@github.com:kmcguire3413/MDACSDeliverables.git
+ - cd MDACSDeliverables
+ - cd Nightly
+ - mkdir -p MDACSAuth
+ - cd MDACSAuth
+ - cp ~/tmp/* ./
+ - git add *
+ - git commit -m "travis-ci automated deploy of nightly MDACSAuth"
+ - git push origin master 
 before_cache: true
 before_deploy: true
 deploy:
