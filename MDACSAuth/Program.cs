@@ -11,7 +11,6 @@ using System.Text;
 using static MDACS.API.Auth;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
-using MDACSAPI;
 
 namespace MDACS.Auth
 {
@@ -284,14 +283,14 @@ namespace MDACS.Auth
 
             if (!File.Exists(users_file_path))
             {
-                Logger.WriteDebugString($"Creating users.json at location {dataBasePath}.");
+                Console.WriteLine($"Creating users.json at location {dataBasePath}.");
 
                 var defusrdata = new Dictionary<string, User>();
 
                 File.WriteAllText(users_file_path, JsonConvert.SerializeObject(defusrdata));
             }
 
-            Logger.WriteDebugString($"Loading users.json from {dataBasePath}.");
+            Console.WriteLine($"Loading users.json from {dataBasePath}.");
 
             try
             {
@@ -301,7 +300,7 @@ namespace MDACS.Auth
                     >(File.ReadAllText(users_file_path));
             } catch (JsonSerializationException ex)
             {
-                Logger.WriteCriticalString($"An exception happened during deserialization of the users.json file:\n\n{ex.ToString()}");
+                Console.WriteLine($"An exception happened during deserialization of the users.json file:\n\n{ex.ToString()}");
                 throw;
             }
 
@@ -325,7 +324,7 @@ namespace MDACS.Auth
             // administrator user.
             if (this.users.Count == 0)
             {
-                Logger.WriteCriticalString(
+                Console.WriteLine(
                     "Created default admin user because users.json was empty or non-existant."
                 );
 
@@ -622,11 +621,11 @@ namespace MDACS.Auth
 
                 File.WriteAllText(args[0], JsonConvert.SerializeObject(defcfg));
 
-                Logger.WriteCriticalString($"Wrote the default configuration to the file, {args[0]}.");
+                Console.WriteLine($"Wrote the default configuration to the file, {args[0]}.");
                 return;
             }
 
-            Logger.WriteDebugString($"Reading configuration file, {args[0]}.");
+            Console.WriteLine($"Reading configuration file, {args[0]}.");
 
             var cfg = JsonConvert.DeserializeObject<ProgramConfig>(File.ReadAllText(args[0]));
 
