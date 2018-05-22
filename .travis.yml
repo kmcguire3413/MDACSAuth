@@ -30,7 +30,7 @@ script:
  - cd MDACSAuth
  - cp ~/tmp/* ./
  - git add *
- - git commit -m "travis-ci automated deploy of nightly MDACSAuth"
+ - git commit -m "travis-ci automated deploy of nightly MDACSAuth" || true
  - git push origin master 
 before_cache: true
 before_deploy: true
