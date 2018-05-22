@@ -11,6 +11,7 @@ using System.Text;
 using static MDACS.API.Auth;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace MDACS.Auth
 {
@@ -266,15 +267,29 @@ namespace MDACS.Auth
         Queue<string> challenges;
         Dictionary<string, User> users;
         int maximumChallengesOutstanding;
+        string cmdUrl;
+        string authUrl;
+        string username;
+        string password;
+        string serviceGuid;
 
 
         public ServerState(
             string dataBasePath,
-            int maximumChallengesOutstanding
-        )
+            int maximumChallengesOutstanding,
+            string cmdUrl,
+            string authUrl,
+            string username,
+            string password,
+            string serviceGuid)
         {
             this.dataBasePath = dataBasePath;
             this.maximumChallengesOutstanding = maximumChallengesOutstanding;
+            this.cmdUrl = cmdUrl;
+            this.authUrl = authUrl;
+            this.username = username;
+            this.password = password;
+            this.serviceGuid = serviceGuid;
 
             crng = RandomNumberGenerator.Create();
             challenges = new Queue<string>();
@@ -584,37 +599,71 @@ namespace MDACS.Auth
         /// An asynchronous worker that fetches commands, executes commands, and pushes the results
         /// back to the command service.
         /// </summary>
+        /// <remarks>
+        /// A very simple loop that fetches commands, executes them, and the writes the results back to the
+        /// command service. At the moment, the commands are executed synchronously with only asynchronous
+        /// events yielding control back. However, it would not be difficult to add threads that could execute
+        /// longer running command and write the responses separately, if ever needed.
+        ///
+        /// Maybe even reflection could be useful here? I have always disliked it for performance reasons but
+        /// the power of it within a command and control systems seems to intrigue me greatly for practical
+        /// applications.
+        /// </remarks>
         public async Task CommandControlWorker() {
             while (true) {
-                // fetch commands
-                // iterate commands
-                    // execute command
-                    // push command result/response
-                await Task.Delay(1000 * 30);
+                Debug.WriteLine("Fetching commands.");               
+                var resp = await MDACS.API.Command.FetchCommandsAsync(authUrl, cmdUrl, "auth", serviceGuid, 20000, username, password);
+
+                Debug.WriteLine($"Executing {resp.commands.Length} commands.");
+
+                if (resp.commands.Length == 0) {
+                    continue;
+                }
+
+                var responses = new Dictionary<string, string>();
+
+                foreach (var cmd in resp.commands) {
+                    Debug.WriteLine($"Executing command: {cmd.command}");
+                    responses[cmd.id] = $"Pretend executed the command: {cmd.command}";
+                }
+
+                var wresp = await MDACS.API.Command.WriteResponsesAsync(authUrl, cmdUrl, "auth", serviceGuid, username, password, responses);
+
+                Debug.WriteLine($"Command results written.");
             }
         }
     }
 
     public class ProgramConfig
     {
-        public string ssl_cert_path;
-        public string ssl_cert_pass;
-        public string data_base_path;
+        public string sslCertPath;
+        public string sslCertPass;
+        public string dataBasePath;
         public ushort port;
         public int maximumChallengesOutstanding;
+        public string cmdUrl;
+        public string authUrl;
+        public string username;
+        public string password;
+        public string serviceGuid;
     } 
 
     public class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             if (!File.Exists(args[0]))
             {
                 var defcfg = new ProgramConfig()
                 {
-                    ssl_cert_path = "The path to the SSL/TLS certificate, likely in PFX format.",
-                    ssl_cert_pass = "The password that protects the private key in the certificate.",
-                    data_base_path = "The path to the data directory or location.",
+                    cmdUrl = "The HTTP:// or HTTPS:// URL for the command service.",
+                    authUrl = "The HTTP:// or HTTPS:// URL for a loopback connection to ourselves.",
+                    username = "A valid username to use for connections to other services.",
+                    password = "A valid password to use for connections to other services.",
+                    serviceGuid = "A globally unique and difficult to guess, secret identifier.",
+                    sslCertPath = "The path to the SSL/TLS certificate, likely in PFX format.",
+                    sslCertPass = "The password that protects the private key in the certificate.",
+                    dataBasePath = "The path to the data directory or location.",
                     port = 0,
                     maximumChallengesOutstanding = 100,
                 };
@@ -622,12 +671,22 @@ namespace MDACS.Auth
                 File.WriteAllText(args[0], JsonConvert.SerializeObject(defcfg));
 
                 Console.WriteLine($"Wrote the default configuration to the file, {args[0]}.");
-                return;
+                return 1;
             }
 
             Console.WriteLine($"Reading configuration file, {args[0]}.");
 
             var cfg = JsonConvert.DeserializeObject<ProgramConfig>(File.ReadAllText(args[0]));
+
+            if (cfg.serviceGuid == null) {
+                Console.WriteLine("The service GUID parameter in the configuration file must not be null.");
+                return 1;
+            }
+
+            if (cfg.serviceGuid.Length < 20) {
+                Console.WriteLine("The service GUID should be at least 20 characters in length.");
+                return 1;
+            }
 
             var handlers = new Dictionary<string, SimpleServer<ServerState>.SimpleHTTPHandler>();
 
@@ -640,19 +699,26 @@ namespace MDACS.Auth
             handlers.Add("/user-list", Handlers.UserList);
 
             var state = new ServerState(
-                cfg.data_base_path,
-                cfg.maximumChallengesOutstanding
+                cfg.dataBasePath,
+                cfg.maximumChallengesOutstanding,
+                cfg.cmdUrl,
+                cfg.authUrl,
+                cfg.username,
+                cfg.password,
+                cfg.serviceGuid
             );
 
             var server = SimpleServer<ServerState>.Create(
                 state,
                 handlers,
                 cfg.port,
-                cfg.ssl_cert_path,
-                cfg.ssl_cert_pass
+                cfg.sslCertPath,
+                cfg.sslCertPass
             );
 
             Task.WaitAny(server, state.CommandControlWorker());
+
+            return 0;
         }
     }
 }
